@@ -268,6 +268,3 @@ main :where(article, section) {
 @media (max-width: 640px) {
   body { background: #f8f9fc; }
 }
-@media (prefers-color-scheme: dark) {
-  body { background: #0b0f19; }
-}
