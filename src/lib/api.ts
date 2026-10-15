@@ -79,6 +79,12 @@ export const api = {
       body: JSON.stringify(payload)
     }),
 
+  googleLogin: (credential: string) =>
+    request<{ success: boolean; data: { user: User; token: string } }>('/api/auth/google', {
+      method: 'POST',
+      body: JSON.stringify({ credential })
+    }),
+
   getMe: () => request<{ success: boolean; data: { user: User | null } }>('/api/auth/me'),
 
   logout: () => request<{ success: boolean; message: string }>('/api/auth/logout', { method: 'POST' }),
