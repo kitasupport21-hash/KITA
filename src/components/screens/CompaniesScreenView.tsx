@@ -149,7 +149,9 @@ export const CompaniesScreenView: React.FC<CompaniesScreenViewProps> = ({
                       <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
                         {comp.company_name}
                       </h4>
-                      <CheckCircle2 className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                      {(comp.is_verified || ['verified_kemnaker', 'verified_nib', 'verified_corporate_domain'].includes(comp.verification_status)) && (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-blue-500 shrink-0" aria-label="Perusahaan terverifikasi" />
+                      )}
                     </div>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
                       {comp.industry}
@@ -157,7 +159,7 @@ export const CompaniesScreenView: React.FC<CompaniesScreenViewProps> = ({
                   </div>
                 </div>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-red-50 dark:bg-red-950/60 text-[#8B0026] dark:text-red-300 border border-red-100 dark:border-red-900 shrink-0">
-                  {comp.open_jobs_count || 2} Lowongan
+                  {Number.isFinite(Number(comp.open_jobs_count)) && comp.open_jobs_count !== null && comp.open_jobs_count !== undefined ? Number(comp.open_jobs_count) + ' Lowongan' : 'Profil Perusahaan'}
                 </span>
               </div>
               <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
@@ -201,7 +203,7 @@ export const CompaniesScreenView: React.FC<CompaniesScreenViewProps> = ({
                 </h4>
                 <div className="flex items-center gap-1.5 mt-1 text-[11px] text-emerald-700 dark:text-emerald-400 font-bold">
                   <ShieldCheck className="w-3.5 h-3.5" />
-                  <span>Terverifikasi Resmi</span>
+                  <span>{selectedCompany.is_verified || ['verified_kemnaker', 'verified_nib', 'verified_corporate_domain'].includes(selectedCompany.verification_status) ? 'Terverifikasi' : 'Status verifikasi belum dikonfirmasi'}</span>
                 </div>
               </div>
             </div>
@@ -236,7 +238,7 @@ export const CompaniesScreenView: React.FC<CompaniesScreenViewProps> = ({
               className="w-full py-3 bg-[#8B0026] hover:bg-red-800 text-white font-extrabold rounded-xl text-xs shadow-xs transition-colors flex items-center justify-center gap-1.5"
             >
               <Briefcase className="w-3.5 h-3.5" />
-              <span>Lihat Lowongan ({selectedCompany.open_jobs_count || 2})</span>
+              <span>{Number.isFinite(Number(selectedCompany.open_jobs_count)) && selectedCompany.open_jobs_count !== null && selectedCompany.open_jobs_count !== undefined ? 'Lihat Lowongan (' + Number(selectedCompany.open_jobs_count) + ')' : 'Lihat Lowongan'}</span>
             </button>
           </div>
         </div>
