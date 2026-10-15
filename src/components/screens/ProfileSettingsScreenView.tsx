@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   User as UserIcon,
   FileText,
@@ -37,9 +37,18 @@ export const ProfileSettingsScreenView: React.FC<ProfileSettingsScreenViewProps>
 }) => {
   const { toggleTheme, isDark } = useTheme();
   const [editProfileOpen, setEditProfileOpen] = useState(false);
-  const [editName, setEditName] = useState(currentUser?.full_name || 'Dimas Pratama');
-  const [editPhone, setEditPhone] = useState(currentUser?.phone || '081255550005');
-  const [editCity, setEditCity] = useState(currentUser?.city || 'Surabaya');
+  const [editName, setEditName] = useState(currentUser?.full_name || '');
+  const [editPhone, setEditPhone] = useState(currentUser?.phone || '');
+  const [editCity, setEditCity] = useState(currentUser?.city || '');
+
+  useEffect(() => {
+    setEditName(currentUser?.full_name || '');
+    setEditPhone(currentUser?.phone || '');
+    setEditCity(currentUser?.city || '');
+  }, [currentUser?.id, currentUser?.full_name, currentUser?.phone, currentUser?.city]);
+
+  const profileFields = [currentUser?.full_name, currentUser?.email, currentUser?.phone, currentUser?.city];
+  const profileCompletion = Math.round((profileFields.filter((value) => Boolean(String(value || '').trim()).length / profileFields.length) * 100);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -139,10 +148,10 @@ export const ProfileSettingsScreenView: React.FC<ProfileSettingsScreenViewProps>
         <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1.5">
           <div className="flex justify-between text-xs font-bold">
             <span className="text-slate-600 dark:text-slate-400">Kelengkapan Profil</span>
-            <span className="text-[#8B0026] dark:text-red-400">85%</span>
+            <span className="text-[#8B0026] dark:text-red-400">{profileCompletion}%</span>
           </div>
           <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-            <div className="h-full bg-[#8B0026] rounded-full w-[85%]" />
+            <div className="h-full bg-[#8B0026] rounded-full transition-all" style={{ width: `${profileCompletion}%` }} />
           </div>
         </div>
       </div>
@@ -157,7 +166,7 @@ export const ProfileSettingsScreenView: React.FC<ProfileSettingsScreenViewProps>
             <FileText className="w-4 h-4" />
           </div>
           <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">CV & Berkas</span>
-          <span className="text-[10px] text-slate-400 block">1 File Siap</span>
+          <span className="text-[10px] text-slate-400 block">Berkas lamaran</span>
         </button>
         <button
           onClick={onNavigateToBookmarks}
@@ -177,7 +186,7 @@ export const ProfileSettingsScreenView: React.FC<ProfileSettingsScreenViewProps>
             <Sparkles className="w-4 h-4" />
           </div>
           <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">Keahlian</span>
-          <span className="text-[10px] text-slate-400 block">3 Terdata</span>
+          <span className="text-[10px] text-slate-400 block">Keahlian profil</span>
         </button>
       </div>
 
