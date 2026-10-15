@@ -325,8 +325,14 @@ function AppContent() {
             loading={jobsLoading}
             onSelectJob={handleSelectJob}
             onNavigateToSearch={handleNavigateToSearch}
-            onNavigateToLocations={() => setCurrentScreen('locations')}
-            onNavigateToCompanies={() => setCurrentScreen('companies')}
+            onNavigateToLocations={() => {
+              setCurrentScreen('locations');
+              setActiveTab('locations');
+            }}
+            onNavigateToCompanies={() => {
+              setCurrentScreen('companies');
+              setActiveTab('companies');
+            }}
             onToggleBookmark={handleToggleBookmark}
             onOpenNotifications={() => setNotificationsModalOpen(true)}
             onOpenAuth={() => handleOpenAuth('login')}
@@ -550,11 +556,16 @@ function AppContent() {
                 <div
                   key={n.id}
                   onClick={() => {
-                    setNotifications((prev) =>
-                      prev.map((item) => (item.id === n.id ? { ...item, is_read: true } : item))
-                    );
-                    api.markNotificationRead(n.id).catch(() => {});
                     setNotificationsModalOpen(false);
+                    api.markNotificationRead(n.id)
+                      .then(() => {
+                        setNotifications((prev) =>
+                          prev.map((item) => (item.id === n.id ? { ...item, is_read: true } : item))
+                        );
+                      })
+                      .catch(() => {
+                        showToast('Notifikasi belum dapat diperbarui. Periksa koneksi lalu coba lagi.');
+                      });
                     const target = String(n.link || '').toLowerCase();
                     if (target.includes('employer')) {
                       setActiveTab('employer-dashboard');
