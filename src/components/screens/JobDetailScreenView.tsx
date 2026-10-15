@@ -193,7 +193,7 @@ export const JobDetailScreenView: React.FC<JobDetailScreenViewProps> = ({
           ) : (
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/50 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-[11px] font-bold">
               <ShieldCheck className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-              <span>Portal Karir Resmi</span>
+              <span>Belum diverifikasi</span>
             </div>
           )}
         </div>
@@ -209,7 +209,7 @@ export const JobDetailScreenView: React.FC<JobDetailScreenViewProps> = ({
                 className="text-xs font-bold text-[#8B0026] dark:text-red-400 hover:underline flex items-center gap-1 text-left"
               >
                 <span>{job.employer_name || 'Mitra Resmi KITA'}</span>
-                {(job.is_verified_employer || job.company_verified_status !== 'pending_verification') && (
+                {(job.is_verified_employer || job.company_verified_status === 'verified_kemnaker' || job.company_verified_status === 'verified_nib') && (
                   <CheckCircle2 className="w-3.5 h-3.5 text-blue-500 shrink-0" />
                 )}
               </button>
