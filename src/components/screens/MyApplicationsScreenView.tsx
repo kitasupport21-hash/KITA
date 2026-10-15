@@ -54,6 +54,7 @@ export const MyApplicationsScreenView: React.FC<MyApplicationsScreenViewProps> =
   const [loading, setLoading] = useState(true);
   const [activeStatus, setActiveStatus] = useState<string>('all');
   const [selectedApp, setSelectedApp] = useState<JobApplication | null>(null);
+  const [statusError, setStatusError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!currentUser) {
@@ -83,23 +84,17 @@ export const MyApplicationsScreenView: React.FC<MyApplicationsScreenViewProps> =
   const handleStatusChange = async (newStatus: ApplicationStatus) => {
     if (!selectedApp) return;
     const appId = selectedApp.id;
-    const updatedDate = new Date().toISOString();
-
-    const updatedApp: JobApplication = {
-      ...selectedApp,
-      status: newStatus,
-      updated_at: updatedDate
-    };
-
-    setSelectedApp(updatedApp);
-    setApplications((prev) =>
-      prev.map((app) => (app.id === appId ? updatedApp : app))
-    );
-
+    setStatusError(null);
     try {
       await api.updateSeekerApplicationStatus(appId, newStatus);
-    } catch {
-      // Local preview updated successfully
+      const refreshed = await api.getSeekerApplications();
+      if (refreshed.success && refreshed.data) {
+        setApplications(refreshed.data);
+        const updated = refreshed.data.find((app) => app.id === appId);
+        if (updated) setSelectedApp(updated);
+      }
+    } catch (error: any) {
+      setStatusError(error?.message || 'Status lamaran tidak dapat diperbarui. Coba lagi.');
     }
   };
 
@@ -184,6 +179,12 @@ export const MyApplicationsScreenView: React.FC<MyApplicationsScreenViewProps> =
 
   return (
     <div className="space-y-4 max-w-2xl mx-auto pb-10 transition-colors duration-200">
+
+      {statusError && (
+        <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
+          {statusError}
+        </div>
+      )}
 
       {/* Header with Title and Quick Summary */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-gradient-to-r from-red-50/60 via-slate-50 to-amber-50/50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-850 p-4 rounded-3xl border border-slate-200/80 dark:border-slate-800">
