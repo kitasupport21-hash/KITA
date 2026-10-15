@@ -36,7 +36,7 @@ export const PIPELINE_STAGES: PipelineStageConfig[] = [
     stepNumber: 1,
     label: 'Lamaran Terkirim',
     shortLabel: 'Diajukan',
-    description: 'Berkas digital dan CV tersimpan di portal dan diteruskan ke sistem rekrutmen perusahaan.',
+    description: 'Lamaran tercatat di KITA. Pengiriman ke perusahaan bergantung pada metode lamaran yang digunakan.',
     icon: FileText
   },
   {
@@ -44,7 +44,7 @@ export const PIPELINE_STAGES: PipelineStageConfig[] = [
     stepNumber: 2,
     label: 'Peninjauan Berkas',
     shortLabel: 'Ditinjau',
-    description: 'Tim HRD sedang meneliti kesesuaian kualifikasi, pengalaman, dan portofolio kandidat.',
+    description: 'Status ini berarti lamaran ditandai sedang ditinjau. Hubungi perusahaan untuk memastikan detail proses.',
     icon: Search
   },
   {
@@ -52,7 +52,7 @@ export const PIPELINE_STAGES: PipelineStageConfig[] = [
     stepNumber: 3,
     label: 'Tahap Wawancara',
     shortLabel: 'Wawancara',
-    description: 'Kandidat diundang ke sesi wawancara kompetensi kerja atau wawancara teknis.',
+    description: 'Status wawancara hanya mencerminkan pembaruan yang tercatat. Pastikan jadwal melalui kontak resmi perusahaan.',
     icon: Calendar
   },
   {
@@ -60,7 +60,7 @@ export const PIPELINE_STAGES: PipelineStageConfig[] = [
     stepNumber: 4,
     label: 'Keputusan Akhir',
     shortLabel: 'Keputusan',
-    description: 'Pengumuman hasil evaluasi menyeluruh atau penerbitan surat penawaran kerja (Offering).',
+    description: 'Tahap keputusan mengikuti pembaruan status dari perusahaan; KITA tidak menerbitkan surat penawaran kerja.',
     icon: Award
   }
 ];
@@ -97,7 +97,7 @@ export function getStatusTheme(status: ApplicationStatus | string) {
         percent: 25,
         icon: Clock,
         stepHeadline: 'Tahap 1 dari 4: Berkas Diajukan',
-        stepSummary: 'Berkas dan resume Anda telah berhasil tercatat di sistem rekrutmen perusahaan. Menunggu giliran antrian verifikasi berkas oleh Tim HRD.'
+        stepSummary: 'Status terakhir yang tercatat adalah lamaran diajukan. Ini tidak memastikan perusahaan telah menerima berkas di sistem internalnya.'
       };
     case 'reviewing':
       return {
@@ -113,7 +113,7 @@ export function getStatusTheme(status: ApplicationStatus | string) {
         percent: 50,
         icon: Search,
         stepHeadline: 'Tahap 2 dari 4: Peninjauan Kualifikasi',
-        stepSummary: 'Tim HRD perusahaan aktif mempelajari portofolio dan riwayat kerja Anda. Estimasi respon verifikasi biasanya 2-5 hari kerja.'
+        stepSummary: 'Status terakhir yang tercatat adalah peninjauan. KITA tidak dapat memastikan aktivitas internal perusahaan atau waktu respons.'
       };
     case 'interview':
       return {
@@ -129,7 +129,7 @@ export function getStatusTheme(status: ApplicationStatus | string) {
         percent: 75,
         icon: Calendar,
         stepHeadline: 'Tahap 3 dari 4: Undangan Sesi Wawancara',
-        stepSummary: 'Selamat! Profil Anda lolos seleksi berkas. Perusahaan menjadwalkan sesi interview. Pastikan nomor kontak dan email aktif untuk konfirmasi.'
+        stepSummary: 'Status lamaran mencatat tahap wawancara. Konfirmasi undangan dan jadwal langsung melalui kontak resmi perusahaan.'
       };
     case 'accepted':
       return {
@@ -145,7 +145,7 @@ export function getStatusTheme(status: ApplicationStatus | string) {
         percent: 100,
         icon: CheckCircle2,
         stepHeadline: 'Tahap 4 dari 4: Diterima Resmi 🎉',
-        stepSummary: 'Selamat! Anda dinyatakan lolos seluruh tahapan rekrutmen. Surat penawaran kerja (Offering Letter) resmi telah diterbitkan oleh perusahaan.'
+        stepSummary: 'Status lamaran ditandai diterima. Konfirmasi hasil dan surat penawaran langsung dengan perusahaan sebelum mengambil keputusan.'
       };
     case 'rejected':
       return {
@@ -161,7 +161,7 @@ export function getStatusTheme(status: ApplicationStatus | string) {
         percent: 100,
         icon: XCircle,
         stepHeadline: 'Tahapan Seleksi Ditutup',
-        stepSummary: 'Terima kasih telah berpartisipasi. Kualifikasi Anda disimpan dalam database talent perusahaan untuk peluang posisi berikutnya yang cocok.'
+        stepSummary: 'Status lamaran ditandai tidak lolos. Hubungi perusahaan bila Anda memerlukan umpan balik lebih lanjut.'
       };
     default:
       return {
@@ -598,44 +598,6 @@ export const ApplicationTimelineModal: React.FC<{
             "{application.cover_letter || 'Pengajuan berkas resmi melalui platform KITA ID.'}"
           </p>
         </div>
-
-        {/* Simulation / Interactive Test Switcher */}
-        {onStatusChange && (
-          <div className="p-3 bg-slate-100/70 dark:bg-slate-800/40 rounded-2xl border border-slate-200 dark:border-slate-700/60 space-y-2">
-            <div className="flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-300 font-bold">
-              <span className="flex items-center gap-1">
-                <RefreshCw className="w-3 h-3 text-[#8B0026] dark:text-red-400" />
-                <span>Simulasi Status Alur Lamaran:</span>
-              </span>
-              <span className="text-[10px] text-slate-400 font-normal">Klik untuk uji tampilan</span>
-            </div>
-            <div className="grid grid-cols-5 gap-1 text-[11px]">
-              {(['submitted', 'reviewing', 'interview', 'accepted', 'rejected'] as ApplicationStatus[]).map((st) => {
-                const isActive = application.status === st;
-                const labels: Record<string, string> = {
-                  submitted: 'Terkirim',
-                  reviewing: 'Ditinjau',
-                  interview: 'Wawancara',
-                  accepted: 'Diterima',
-                  rejected: 'Belum Lolos'
-                };
-                return (
-                  <button
-                    key={st}
-                    onClick={() => onStatusChange(st)}
-                    className={`py-1.5 px-1 rounded-lg text-center font-bold text-[10px] transition-all ${
-                      isActive
-                        ? 'bg-[#8B0026] text-white shadow-2xs'
-                        : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    {labels[st]}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
 
         {/* Close Button */}
         <button

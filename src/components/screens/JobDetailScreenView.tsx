@@ -44,10 +44,12 @@ export const JobDetailScreenView: React.FC<JobDetailScreenViewProps> = ({
   const [reportDetails, setReportDetails] = useState('');
   const [reportSubmitting, setReportSubmitting] = useState(false);
   const [reportSuccessMessage, setReportSuccessMessage] = useState<string | null>(null);
+  const [reportErrorMessage, setReportErrorMessage] = useState<string | null>(null);
 
   const handleReportSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setReportSubmitting(true);
+    setReportErrorMessage(null);
     try {
       await api.reportJob(job.id, {
         reason: reportReason,
@@ -60,12 +62,8 @@ export const JobDetailScreenView: React.FC<JobDetailScreenViewProps> = ({
         setReportModalOpen(false);
         setReportDetails('');
       }, 1800);
-    } catch {
-      setReportSuccessMessage('Laporan telah dicatat dalam sistem pengawasan.');
-      setTimeout(() => {
-        setReportSuccessMessage(null);
-        setReportModalOpen(false);
-      }, 1800);
+    } catch (error: any) {
+      setReportErrorMessage(error?.message || 'Laporan belum berhasil dikirim. Silakan coba lagi.');
     } finally {
       setReportSubmitting(false);
     }
@@ -100,7 +98,12 @@ export const JobDetailScreenView: React.FC<JobDetailScreenViewProps> = ({
         ? 'Gaji Kompetitif'
         : `${formatRupiah(job.min_salary)} - ${formatRupiah(job.max_salary)}`;
 
-    const shareUrl = typeof window !== 'undefined' ? window.location.href : 'https://kita.id';
+    const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
+
+    if (!shareUrl) {
+      setShareFeedback('Tautan belum tersedia');
+      return;
+    }
 
     const shareData = {
       title: `${job.title} - ${job.employer_name || 'KITA'}`,
@@ -195,7 +198,7 @@ export const JobDetailScreenView: React.FC<JobDetailScreenViewProps> = ({
           ) : (
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/50 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-[11px] font-bold">
               <ShieldCheck className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-              <span>Portal Karir Resmi</span>
+              <span>Belum diverifikasi</span>
             </div>
           )}
         </div>
@@ -211,7 +214,7 @@ export const JobDetailScreenView: React.FC<JobDetailScreenViewProps> = ({
                 className="text-xs font-bold text-[#8B0026] dark:text-red-400 hover:underline flex items-center gap-1 text-left"
               >
                 <span>{job.employer_name || 'Mitra Resmi KITA'}</span>
-                {(job.is_verified_employer || job.company_verified_status !== 'pending_verification') && (
+                {(job.is_verified_employer || job.company_verified_status === 'verified_kemnaker' || job.company_verified_status === 'verified_nib') && (
                   <CheckCircle2 className="w-3.5 h-3.5 text-blue-500 shrink-0" />
                 )}
               </button>
@@ -438,6 +441,7 @@ export const JobDetailScreenView: React.FC<JobDetailScreenViewProps> = ({
               </div>
             ) : (
               <form onSubmit={handleReportSubmit} className="space-y-3 text-xs">
+                {reportErrorMessage && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">{reportErrorMessage}</p>}
                 <div>
                   <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Alasan Pelaporan</label>
                   <select
