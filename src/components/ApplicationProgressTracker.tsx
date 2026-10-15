@@ -599,44 +599,6 @@ export const ApplicationTimelineModal: React.FC<{
           </p>
         </div>
 
-        {/* Simulation / Interactive Test Switcher */}
-        {onStatusChange && (
-          <div className="p-3 bg-slate-100/70 dark:bg-slate-800/40 rounded-2xl border border-slate-200 dark:border-slate-700/60 space-y-2">
-            <div className="flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-300 font-bold">
-              <span className="flex items-center gap-1">
-                <RefreshCw className="w-3 h-3 text-[#8B0026] dark:text-red-400" />
-                <span>Simulasi Status Alur Lamaran:</span>
-              </span>
-              <span className="text-[10px] text-slate-400 font-normal">Klik untuk uji tampilan</span>
-            </div>
-            <div className="grid grid-cols-5 gap-1 text-[11px]">
-              {(['submitted', 'reviewing', 'interview', 'accepted', 'rejected'] as ApplicationStatus[]).map((st) => {
-                const isActive = application.status === st;
-                const labels: Record<string, string> = {
-                  submitted: 'Terkirim',
-                  reviewing: 'Ditinjau',
-                  interview: 'Wawancara',
-                  accepted: 'Diterima',
-                  rejected: 'Belum Lolos'
-                };
-                return (
-                  <button
-                    key={st}
-                    onClick={() => onStatusChange(st)}
-                    className={`py-1.5 px-1 rounded-lg text-center font-bold text-[10px] transition-all ${
-                      isActive
-                        ? 'bg-[#8B0026] text-white shadow-2xs'
-                        : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    {labels[st]}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
         {/* Close Button */}
         <button
           onClick={onClose}
