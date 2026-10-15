@@ -26,6 +26,7 @@ interface HomeScreenViewProps {
   onNavigateToCompanies: () => void;
   onToggleBookmark: (jobId: string) => void;
   onOpenNotifications: () => void;
+  unreadNotificationCount?: number;
   onOpenAuth: () => void;
   onPostJob?: () => void;
 }
@@ -70,6 +71,7 @@ export const HomeScreenView: React.FC<HomeScreenViewProps> = ({
   onNavigateToCompanies,
   onToggleBookmark,
   onOpenNotifications,
+  unreadNotificationCount = 0,
   onOpenAuth,
   onPostJob
 }) => {
@@ -133,7 +135,9 @@ export const HomeScreenView: React.FC<HomeScreenViewProps> = ({
             title="Notifikasi"
           >
             <Bell className="w-4 h-4" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#8B0026]" />
+            {unreadNotificationCount > 0 && (
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#8B0026]" aria-label="Ada notifikasi belum dibaca" />
+            )}
           </button>
 
           {currentUser ? (
