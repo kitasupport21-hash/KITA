@@ -39,7 +39,11 @@ const resumeUpload = multer({
   limits: { fileSize: 5 * 1024 * 1024, files: 1 },
   fileFilter: (_req, file, cb) => {
     const isPdf = file.mimetype === 'application/pdf' && path.extname(file.originalname).toLowerCase() === '.pdf';
-    cb(isPdf ? null : new Error('Hanya berkas CV PDF yang diperbolehkan.'), isPdf);
+    if (!isPdf) {
+      cb(new Error('Hanya berkas CV PDF yang diperbolehkan.'));
+      return;
+    }
+    cb(null, true);
   }
 });
 
