@@ -186,7 +186,7 @@ export const ProfileSettingsScreenView: React.FC<ProfileSettingsScreenViewProps>
             <Sparkles className="w-4 h-4" />
           </div>
           <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">Keahlian</span>
-          <span className="text-[10px] text-slate-400 block">Keahlian profil</span>
+          <span className="text-[10px] text-slate-400 block">Profil keahlian</span>
         </button>
       </div>
 
