@@ -44,10 +44,12 @@ export const JobDetailScreenView: React.FC<JobDetailScreenViewProps> = ({
   const [reportDetails, setReportDetails] = useState('');
   const [reportSubmitting, setReportSubmitting] = useState(false);
   const [reportSuccessMessage, setReportSuccessMessage] = useState<string | null>(null);
+  const [reportErrorMessage, setReportErrorMessage] = useState<string | null>(null);
 
   const handleReportSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setReportSubmitting(true);
+    setReportErrorMessage(null);
     try {
       await api.reportJob(job.id, {
         reason: reportReason,
@@ -60,12 +62,8 @@ export const JobDetailScreenView: React.FC<JobDetailScreenViewProps> = ({
         setReportModalOpen(false);
         setReportDetails('');
       }, 1800);
-    } catch {
-      setReportSuccessMessage('Laporan telah dicatat dalam sistem pengawasan.');
-      setTimeout(() => {
-        setReportSuccessMessage(null);
-        setReportModalOpen(false);
-      }, 1800);
+    } catch (error: any) {
+      setReportErrorMessage(error?.message || 'Laporan belum berhasil dikirim. Silakan coba lagi.');
     } finally {
       setReportSubmitting(false);
     }
@@ -438,6 +436,7 @@ export const JobDetailScreenView: React.FC<JobDetailScreenViewProps> = ({
               </div>
             ) : (
               <form onSubmit={handleReportSubmit} className="space-y-3 text-xs">
+                {reportErrorMessage && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">{reportErrorMessage}</p>}
                 <div>
                   <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Alasan Pelaporan</label>
                   <select
