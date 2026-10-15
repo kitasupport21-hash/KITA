@@ -1,0 +1,6 @@
+{
+  "name": "KITA",
+  "description": "Platform Bursa Kerja & Ekosistem Bisnis UMKM Indonesia Terintegrasi untuk Pencari Kerja, Freelancer, dan Pelaku Usaha.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
