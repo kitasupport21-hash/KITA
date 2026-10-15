@@ -329,6 +329,7 @@ function AppContent() {
             onNavigateToCompanies={() => setCurrentScreen('companies')}
             onToggleBookmark={handleToggleBookmark}
             onOpenNotifications={() => setNotificationsModalOpen(true)}
+            unreadNotificationCount={notifications.filter((n) => !n.is_read).length}
             onOpenAuth={() => handleOpenAuth('login')}
             onPostJob={() => {
               if (currentUser?.role === 'employer') {
@@ -432,6 +433,7 @@ function AppContent() {
             onNavigateToCompanies={() => setCurrentScreen('companies')}
             onToggleBookmark={handleToggleBookmark}
             onOpenNotifications={() => setNotificationsModalOpen(true)}
+            unreadNotificationCount={notifications.filter((n) => !n.is_read).length}
             onOpenAuth={() => handleOpenAuth('login')}
           />
         );
