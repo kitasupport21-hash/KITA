@@ -1,0 +1,31 @@
+name: Install KITA app source
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract app source
+        run: |
+          rm -rf /tmp/kita-app
+          unzip -o KITA-app-ready.zip -d /tmp/kita-app
+          rm -rf /tmp/kita-app/.github
+          if [ -d /tmp/kita-app/kita_src ]; then
+            cp -R /tmp/kita-app/kita_src/. .
+          else
+            cp -R /tmp/kita-app/. .
+          fi
+          rm -f KITA-app-ready.zip
+      - name: Commit app source
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet || git commit -m "Install KITA app source"
+          git push
