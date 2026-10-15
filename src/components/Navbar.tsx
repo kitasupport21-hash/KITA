@@ -15,7 +15,8 @@ import {
   Search,
   MapPin,
   Moon,
-  Sun
+  Sun,
+  UserCheck
 } from 'lucide-react';
 
 interface NavbarProps {

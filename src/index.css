@@ -221,3 +221,50 @@ main :where(h1, h2, h3, p, span, a, label) { overflow-wrap: anywhere; }
     transition-duration: 0.01ms !important;
   }
 }
+
+
+/* KITA UI refinement: consistent surfaces, readable contrast, and tactile controls. */
+:root {
+  --kita-brand: #8b0026;
+  --kita-brand-hover: #6f001e;
+  --kita-border: rgba(148, 163, 184, 0.22);
+}
+body {
+  background: #f7f8fb;
+  color: #172033;
+  font-feature-settings: "ss01" on, "cv11" on;
+}
+::selection { background: rgba(139, 0, 38, 0.16); }
+button, a, [role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+button:not(:disabled) {
+  transition: transform 140ms ease, box-shadow 180ms ease, background-color 180ms ease, color 180ms ease, border-color 180ms ease;
+}
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+@media (hover: hover) and (pointer: fine) {
+  main button:not(:disabled):hover {
+    filter: brightness(0.985);
+  }
+  main article:hover, main [data-card="true"]:hover {
+    border-color: rgba(139, 0, 38, 0.22);
+  }
+}
+main :where(input, select, textarea) {
+  border-radius: 0.85rem;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+main :where(input, select, textarea):focus {
+  border-color: rgba(139, 0, 38, 0.55);
+  box-shadow: 0 0 0 3px rgba(139, 0, 38, 0.09);
+  outline: none;
+}
+main :where(article, section) {
+  scroll-margin-top: 5.5rem;
+}
+@media (max-width: 640px) {
+  body { background: #f8f9fc; }
+}
