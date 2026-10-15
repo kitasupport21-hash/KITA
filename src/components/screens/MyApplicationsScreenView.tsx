@@ -54,10 +54,10 @@ export const MyApplicationsScreenView: React.FC<MyApplicationsScreenViewProps> =
   const [loading, setLoading] = useState(true);
   const [activeStatus, setActiveStatus] = useState<string>('all');
   const [selectedApp, setSelectedApp] = useState<JobApplication | null>(null);
-  const [statusError, setStatusError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!currentUser) {
+      setLoadError(null);
       setApplications([]);
       setLoading(false);
       return;
