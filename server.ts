@@ -10,6 +10,7 @@ import dotenv from 'dotenv';
 import { apiRouter } from './src/server/api.js';
 import { authenticateToken } from './src/server/auth.js';
 import { getDatabase } from './src/server/db/database.js';
+import { googleAuthRouter } from './src/server/google-auth.js';
 import { initScheduler } from './src/server/sync/scheduler.js';
 
 dotenv.config();
@@ -61,7 +62,8 @@ async function createServer() {
     next();
   });
 
-  // Mount API router
+  // Mount Google Sign-In and core API routers
+  app.use('/api', googleAuthRouter);
   app.use('/api', apiRouter);
 
   // Static / Frontend serving
