@@ -15,7 +15,7 @@ import {
   HelpCircle,
   Briefcase
 } from 'lucide-react';
-import type { JobApplication, User, ApplicationStatus } from '../../shared/types.js';
+import type { JobApplication, User } from '../../shared/types.js';
 import { api } from '../../lib/api.js';
 import {
   ApplicationMiniTracker,
@@ -52,6 +52,8 @@ export const MyApplicationsScreenView: React.FC<MyApplicationsScreenViewProps> =
 }) => {
   const [applications, setApplications] = useState<JobApplication[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
   const [activeStatus, setActiveStatus] = useState<string>('all');
   const [selectedApp, setSelectedApp] = useState<JobApplication | null>(null);
 
@@ -64,39 +66,25 @@ export const MyApplicationsScreenView: React.FC<MyApplicationsScreenViewProps> =
     }
     const fetchApps = async () => {
       setLoading(true);
+      setLoadError(null);
       try {
         const res = await api.getSeekerApplications();
         if (res.success && res.data) {
           setApplications(res.data);
         } else {
           setApplications([]);
+          setLoadError(res.message || 'Lamaran belum dapat dimuat. Coba lagi.');
         }
       } catch (err) {
         console.warn('Gagal memuat lamaran:', err);
         setApplications([]);
+        setLoadError(err instanceof Error ? err.message : 'Koneksi bermasalah. Periksa internet lalu coba lagi.');
       } finally {
         setLoading(false);
       }
     };
     fetchApps();
-  }, [currentUser]);
-
-  const handleStatusChange = async (newStatus: ApplicationStatus) => {
-    if (!selectedApp) return;
-    const appId = selectedApp.id;
-    setStatusError(null);
-    try {
-      await api.updateSeekerApplicationStatus(appId, newStatus);
-      const refreshed = await api.getSeekerApplications();
-      if (refreshed.success && refreshed.data) {
-        setApplications(refreshed.data);
-        const updated = refreshed.data.find((app) => app.id === appId);
-        if (updated) setSelectedApp(updated);
-      }
-    } catch (error: any) {
-      setStatusError(error?.message || 'Status lamaran tidak dapat diperbarui. Coba lagi.');
-    }
-  };
+  }, [currentUser, retryCount]);
 
   const filteredApps = applications.filter((app) => {
     if (activeStatus === 'all') return true;
@@ -150,7 +138,7 @@ export const MyApplicationsScreenView: React.FC<MyApplicationsScreenViewProps> =
     );
   }
 
-  if (applications.length === 0 && !loading) {
+  if (applications.length === 0 && !loading && !loadError) {
     return (
       <div className="space-y-4 max-w-2xl mx-auto pb-10 transition-colors duration-200">
         <div className="bg-white dark:bg-slate-900 p-8 sm:p-10 text-center rounded-3xl border border-slate-200 dark:border-slate-800 max-w-md mx-auto my-6 shadow-xs space-y-4">
@@ -180,9 +168,10 @@ export const MyApplicationsScreenView: React.FC<MyApplicationsScreenViewProps> =
   return (
     <div className="space-y-4 max-w-2xl mx-auto pb-10 transition-colors duration-200">
 
-      {statusError && (
-        <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
-          {statusError}
+      {loadError && (
+        <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-xs text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300 space-y-3">
+          <p>{loadError}</p>
+          <button onClick={() => setRetryCount((count) => count + 1)} className="rounded-lg bg-red-700 px-3 py-2 font-bold text-white">Coba Lagi</button>
         </div>
       )}
 
@@ -251,7 +240,7 @@ export const MyApplicationsScreenView: React.FC<MyApplicationsScreenViewProps> =
       </div>
 
       {/* Applications List */}
-      {loading ? (
+      {loadError ? null : loading ? (
         <div className="space-y-3">
           {[1, 2, 3].map((n) => (
             <div key={n} className="h-44 bg-slate-100 dark:bg-slate-800/60 rounded-3xl animate-pulse" />
@@ -310,7 +299,7 @@ export const MyApplicationsScreenView: React.FC<MyApplicationsScreenViewProps> =
               <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
                 <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>Tervalidasi Resmi KITA ID</span>
+                  <span>Lamaran tercatat di akun Anda</span>
                 </div>
                 <div className="text-[#8B0026] dark:text-red-400 font-extrabold flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
                   <span>Rincian Timeline</span>
@@ -327,7 +316,6 @@ export const MyApplicationsScreenView: React.FC<MyApplicationsScreenViewProps> =
         <ApplicationTimelineModal
           application={selectedApp}
           onClose={() => setSelectedApp(null)}
-          onStatusChange={handleStatusChange}
         />
       )}
     </div>
