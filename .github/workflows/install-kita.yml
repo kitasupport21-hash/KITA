@@ -1,6 +1,11 @@
 name: Install KITA app source
 
 on:
+  push:
+    branches:
+      - install-kita-source
+    paths:
+      - .github/workflows/install-kita.yml
   workflow_dispatch:
 
 permissions:
