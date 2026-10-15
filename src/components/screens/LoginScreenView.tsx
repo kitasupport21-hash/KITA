@@ -32,7 +32,6 @@ export const LoginScreenView: React.FC<LoginScreenViewProps> = ({
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -249,20 +248,11 @@ export const LoginScreenView: React.FC<LoginScreenViewProps> = ({
                 </div>
               </div>
 
-              {/* Remember Me */}
-              <div className="flex items-center justify-between pt-0.5">
-                <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-600 dark:text-slate-400 select-none">
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-4 h-4 rounded text-[#8B0026] focus:ring-[#8B0026] accent-[#8B0026]"
-                  />
-                  <span>Ingat sesi saya</span>
-                </label>
+              {/* Session security: the server uses an HttpOnly session cookie. */}
+              <div className="flex items-center justify-end pt-0.5">
                 <span className="text-[11px] text-slate-400 flex items-center gap-1">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-                  <span>Enkripsi Aman</span>
+                  <span>Sesi aman melalui cookie</span>
                 </span>
               </div>
 
