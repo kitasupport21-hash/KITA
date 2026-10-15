@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Mail,
   Lock,
@@ -15,7 +15,6 @@ import {
 import type { User } from '../../shared/types.js';
 import { api, setClientToken } from '../../lib/api.js';
 import { useTheme } from '../ThemeContext.js';
-import { GoogleSignInButton } from '../GoogleSignInButton.js';
 
 interface LoginScreenViewProps {
   onLoginSuccess: (user: User) => void;
@@ -38,15 +37,6 @@ export const LoginScreenView: React.FC<LoginScreenViewProps> = ({
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSuccess, setForgotSuccess] = useState(false);
-
-  const handleGoogleSuccess = useCallback((user: User) => {
-    setError(null);
-    onLoginSuccess(user);
-  }, [onLoginSuccess]);
-
-  const handleGoogleError = useCallback((message: string) => {
-    setError(message);
-  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -272,19 +262,6 @@ export const LoginScreenView: React.FC<LoginScreenViewProps> = ({
                 )}
               </button>
 
-              {import.meta.env.VITE_GOOGLE_CLIENT_ID && (
-                <div className="space-y-3 pt-1">
-                  <div className="flex items-center gap-3 text-[10px] text-slate-400">
-                    <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
-                    <span>ATAU</span>
-                    <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
-                  </div>
-                  <GoogleSignInButton
-                    onSuccess={handleGoogleSuccess}
-                    onError={handleGoogleError}
-                  />
-                </div>
-              )}
 
               {/* Register Link */}
               <div className="text-center pt-2 text-xs text-slate-500 dark:text-slate-400">
