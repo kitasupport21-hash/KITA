@@ -115,8 +115,8 @@ export const MyApplicationsScreenView: React.FC<MyApplicationsScreenViewProps> =
             Pelacakan Status Lamaran
           </h3>
           <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed max-w-sm mx-auto">
-            Masuk ke akun Anda untuk memantau status lamaran kerja: 
-            <strong> Diajukan</strong>, <strong>Ditinjau</strong>, hingga <strong>Wawancara</strong> secara real-time.
+            Masuk ke akun Anda untuk melihat status lamaran yang tercatat di KITA: 
+            <strong> Diajukan</strong>, <strong>Ditinjau</strong>, hingga <strong>Wawancara</strong> sesuai pembaruan yang tersedia.
           </p>
         </div>
         <div className="space-y-2 pt-2">
@@ -187,7 +187,7 @@ export const MyApplicationsScreenView: React.FC<MyApplicationsScreenViewProps> =
             </span>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Pelacak alur rekrutmen resmi: Terkirim → Review HRD → Wawancara → Keputusan
+            Status lamaran berdasarkan pembaruan yang tercatat: Diajukan → Ditinjau → Wawancara → Keputusan
           </p>
         </div>
         <button
