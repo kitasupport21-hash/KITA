@@ -48,7 +48,7 @@ export const ProfileSettingsScreenView: React.FC<ProfileSettingsScreenViewProps>
   }, [currentUser?.id, currentUser?.full_name, currentUser?.phone, currentUser?.city]);
 
   const profileFields = [currentUser?.full_name, currentUser?.email, currentUser?.phone, currentUser?.city];
-  const profileCompletion = Math.round((profileFields.filter((value) => Boolean(String(value || '').trim()).length / profileFields.length) * 100);
+  const profileCompletion = Math.round((profileFields.filter((value) => Boolean(String(value || '').trim())).length / profileFields.length) * 100);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
