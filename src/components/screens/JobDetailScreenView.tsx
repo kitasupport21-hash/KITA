@@ -98,7 +98,12 @@ export const JobDetailScreenView: React.FC<JobDetailScreenViewProps> = ({
         ? 'Gaji Kompetitif'
         : `${formatRupiah(job.min_salary)} - ${formatRupiah(job.max_salary)}`;
 
-    const shareUrl = typeof window !== 'undefined' ? window.location.href : 'https://kita.id';
+    const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
+
+    if (!shareUrl) {
+      setShareFeedback('Tautan belum tersedia');
+      return;
+    }
 
     const shareData = {
       title: `${job.title} - ${job.employer_name || 'KITA'}`,
