@@ -1,86 +1,29 @@
 import React from 'react';
-import { ArrowRight, LogIn, Building2, ShieldCheck } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
-interface SplashScreenViewProps {
-  onGetStarted: () => void;
-  onOpenLogin: () => void;
-}
+interface SplashScreenViewProps { onGetStarted: () => void; onOpenLogin: () => void; }
 
-export const SplashScreenView: React.FC<SplashScreenViewProps> = ({
-  onGetStarted,
-  onOpenLogin
-}) => {
-  return (
-    <div className="min-h-[640px] h-full bg-[#8B0026] text-white flex flex-col justify-between relative overflow-hidden rounded-3xl shadow-xl">
-      {/* Ambient background glows */}
-      <div className="absolute -top-20 -right-20 w-80 h-80 bg-red-500/20 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute top-1/3 -left-20 w-80 h-80 bg-rose-950/40 rounded-full blur-3xl pointer-events-none" />
-
-      {/* Top Bar / Status preview */}
-      <div className="p-6 pt-5 flex items-center justify-between relative z-10">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-[11px] font-semibold text-red-100 border border-white/15">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-300" />
-          <span>Platform Resmi Kemnaker RI</span>
-        </div>
-        <button
-          onClick={onGetStarted}
-          className="text-xs text-red-200 hover:text-white px-3 py-1 rounded-full bg-white/10 backdrop-blur-md transition-colors"
-        >
-          Lewati
-        </button>
-      </div>
-
-      {/* Central Hero Branding */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 text-center relative z-10 py-6">
-        <div className="w-20 h-20 rounded-3xl bg-white text-[#8B0026] flex items-center justify-center font-black text-3xl shadow-2xl mb-4 tracking-tighter border-2 border-red-100/50">
-          KI
-        </div>
-        <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-white mb-2">
-          KITA
-        </h1>
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/15 backdrop-blur-md text-xs font-bold text-red-100 mb-4 border border-white/20">
-          <span>Kerja · Freelance · UMKM</span>
-        </div>
-        <p className="text-sm text-red-100/90 max-w-xs leading-relaxed font-medium">
-          Peluang Kerja Untuk Masa Depan Yang Lebih Baik di Seluruh Penjuru Nusantara
-        </p>
-
-        {/* Visual Card: Ecosystem summary */}
-        <div className="mt-6 w-full max-w-xs rounded-2xl bg-white/10 backdrop-blur-md p-3.5 border border-white/20 text-left flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
-            <Building2 className="w-6 h-6 text-white" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="text-xs font-bold text-white truncate">Ekosistem Bursa Kerja Resmi</div>
-            <div className="text-[11px] text-red-200/90">38 Provinsi · Ribuan UMKM & BUMN</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom Architectural Silhouette & Action Buttons */}
-      <div className="relative w-full z-10 px-6 pb-7 pt-2">
-        <div className="space-y-3 max-w-xs mx-auto">
-          <button
-            onClick={onGetStarted}
-            className="w-full py-3.5 px-5 bg-white text-[#8B0026] hover:bg-red-50 text-sm font-extrabold rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 active:scale-98"
-          >
-            <span>Mulai Sekarang</span>
-            <ArrowRight className="w-4 h-4 text-[#8B0026]" />
-          </button>
-          <button
-            onClick={onOpenLogin}
-            className="w-full py-3 px-5 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-2xl border border-white/25 transition-all flex items-center justify-center gap-2 active:scale-98"
-          >
-            <LogIn className="w-4 h-4 text-white" />
-            <span>Sudah Punya Akun? Masuk</span>
-          </button>
-        </div>
-        <div className="mt-4 text-center">
-          <span className="text-[10px] text-red-200/70 uppercase tracking-widest font-semibold">
-            Kementerian Ketenagakerjaan RI · NIB Terintegrasi
-          </span>
-        </div>
-      </div>
+export const SplashScreenView: React.FC<SplashScreenViewProps> = ({ onGetStarted, onOpenLogin }) => (
+  <div className="min-h-[680px] h-full bg-[#146BFF] text-white flex flex-col justify-between overflow-hidden rounded-[36px] relative">
+    <div className="absolute inset-x-0 bottom-0 h-[42%] bg-gradient-to-t from-[#0754cf] to-transparent pointer-events-none" />
+    <div className="absolute bottom-0 left-0 right-0 h-48 opacity-25 pointer-events-none">
+      <div className="absolute left-[8%] bottom-0 w-10 h-24 bg-white/20 rounded-t-sm" />
+      <div className="absolute left-[18%] bottom-0 w-16 h-32 bg-white/15 rounded-t-sm" />
+      <div className="absolute right-[18%] bottom-0 w-14 h-28 bg-white/15 rounded-t-sm" />
+      <div className="absolute right-[7%] bottom-0 w-9 h-20 bg-white/20 rounded-t-sm" />
+      <div className="absolute left-1/2 bottom-0 -translate-x-1/2 w-1.5 h-44 bg-white/75" />
+      <div className="absolute left-1/2 bottom-36 -translate-x-1/2 w-10 h-10 rounded-full border-4 border-white/75" />
+      <div className="absolute left-1/2 bottom-0 -translate-x-1/2 w-24 h-1 bg-white/70 rounded-full" />
     </div>
-  );
-};
+    <div className="relative z-10 px-7 pt-8 text-right"><button onClick={onGetStarted} className="text-xs font-semibold text-white/90">Lewati</button></div>
+    <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-7 text-center">
+      <div className="w-24 h-24 flex items-center justify-center mb-4"><div className="text-[74px] font-black italic tracking-[-0.18em] leading-none text-white">K</div></div>
+      <h1 className="text-4xl font-black tracking-tight">KerjaKu</h1>
+      <p className="mt-3 text-sm font-medium text-blue-100 max-w-[260px] leading-relaxed">Temukan Pekerjaan Impianmu di Indonesia</p>
+    </div>
+    <div className="relative z-10 px-7 pb-8">
+      <button onClick={onGetStarted} className="w-full py-3.5 bg-white text-[#146BFF] text-sm font-extrabold rounded-xl shadow-lg flex items-center justify-center gap-2">Mulai Sekarang <ArrowRight className="w-4 h-4" /></button>
+      <button onClick={onOpenLogin} className="w-full mt-3 py-2 text-xs font-semibold text-white/90">Sudah punya akun? Masuk</button>
+    </div>
+  </div>
+);
