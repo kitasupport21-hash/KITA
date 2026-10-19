@@ -1,10 +1,12 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import provinceData from '../data/indonesia-provinces.json';
 import { displayProvinceName, INDONESIAN_REGENCIES } from '../lib/indonesiaRegions';
 
 type Props = { keyword?: string; province?: string };
 type Province = { id: string; name: string };
 type Regency = { id: string; provinceId: string; name: string };
+type OfficialJob = { id: string; title: string; company: string; city: string; workMode: string; category: string; description: string; salaryText: string; sourceUrl: string; applyUrl: string; deadline: string; verifiedSource: boolean };
+type OfficialFeed = { jobs: OfficialJob[]; sourceUrl: string; checkedAt: string; notice: string; live: boolean };
 const PROVINCES = provinceData as Province[];
 const REGENCIES = INDONESIAN_REGENCIES as Regency[];
 
@@ -39,6 +41,18 @@ export default function NovaJobSources({ keyword = '', province = 'All Indonesia
   const [selectedRegency, setSelectedRegency] = useState('');
   const [selectedRole, setSelectedRole] = useState('');
   const [customKeyword, setCustomKeyword] = useState(keyword);
+  const [officialFeed, setOfficialFeed] = useState<OfficialFeed | null>(null);
+  const [officialLoading, setOfficialLoading] = useState(true);
+  const [officialError, setOfficialError] = useState('');
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/public/jobs/pasker', { headers: { accept: 'application/json' } })
+      .then(async (response) => { const data = await response.json(); if (!response.ok) throw new Error(data.notice || data.error || 'Official source unavailable'); return data as OfficialFeed; })
+      .then((data) => { if (!cancelled) { setOfficialFeed(data); setOfficialError(''); } })
+      .catch((error: unknown) => { if (!cancelled) setOfficialError(error instanceof Error ? error.message : 'Official source unavailable'); })
+      .finally(() => { if (!cancelled) setOfficialLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
   const availableRegencies = useMemo(() => REGENCIES
     .filter((item) => !selectedProvince || item.provinceId === selectedProvince)
     .slice().sort((a, b) => a.name.localeCompare(b.name, 'id')), [selectedProvince]);
@@ -56,6 +70,13 @@ export default function NovaJobSources({ keyword = '', province = 'All Indonesia
       <label>Provinsi<select value={selectedProvince} onChange={(event) => { setSelectedProvince(event.target.value); setSelectedRegency(''); }}><option value="">Seluruh Indonesia</option>{PROVINCES.slice().sort((a,b)=>a.name.localeCompare(b.name,'id')).map((item)=><option key={item.id} value={item.id}>{displayProvinceName(item.name)}</option>)}</select></label>
       <label>Kabupaten / Kota<select value={selectedRegency} onChange={(event) => setSelectedRegency(event.target.value)}><option value="">Semua kabupaten/kota</option>{availableRegencies.map((item)=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
       <label>Posisi atau keterampilan<input value={customKeyword} onChange={(event) => { setCustomKeyword(event.target.value); setSelectedRole(''); }} placeholder="Contoh: kasir, operator, data analyst" /></label>
+    </div>
+
+    <div className="official-jobs-panel">
+      <div className="source-heading"><div><span className="eyebrow">OFFICIAL LIVE SOURCE</span><h3>Lowongan resmi Pasker ID</h3></div><a className="source-live-label source-live-link" href="https://paskerid.kemnaker.go.id/miniJobi" target="_blank" rel="noopener noreferrer">Open official portal ↗</a></div>
+      <p className="source-note">NOVA checks the public miniJobi page from Indonesia’s Ministry of Manpower. Listings past their application deadline are excluded; applications remain on the official portal.</p>
+      {officialLoading ? <p className="official-feed-status">Memeriksa lowongan resmi terbaru…</p> : officialError ? <p className="official-feed-status">{officialError}. <a href="https://paskerid.kemnaker.go.id/miniJobi" target="_blank" rel="noopener noreferrer">Periksa Pasker ID langsung.</a></p> : officialFeed?.jobs.length ? <div className="official-job-list">{officialFeed.jobs.map((job) => <article className="official-job-card" key={job.id}><div><strong>{job.title}</strong><span>{job.company} · {job.city || 'Lokasi lihat detail'}</span><small>{job.workMode}{job.category ? ` · ${job.category}` : ''}{job.salaryText ? ` · ${job.salaryText}` : ''}</small><small>Batas lamaran: {new Date(job.deadline).toLocaleDateString('id-ID')}</small></div><div className="official-job-actions"><a href={job.sourceUrl} target="_blank" rel="noopener noreferrer">Detail</a><a href={job.applyUrl} target="_blank" rel="noopener noreferrer">Lamar ↗</a></div></article>)}</div> : <div className="official-feed-status">{officialFeed?.notice || 'Belum ada lowongan aktif yang lolos pemeriksaan tanggal.'} <a href="https://paskerid.kemnaker.go.id/miniJobi" target="_blank" rel="noopener noreferrer">Lihat halaman resmi ↗</a></div>}
+      {!officialLoading && officialFeed?.checkedAt && <p className="official-feed-updated">Last checked: {new Date(officialFeed.checkedAt).toLocaleString('id-ID')} · Source: <a href={officialFeed.sourceUrl} target="_blank" rel="noopener noreferrer">paskerid.kemnaker.go.id</a></p>}
     </div>
 
     <div className="future-role-heading"><b>Bidang karier masa depan</b><span>Choose a role family</span></div>
