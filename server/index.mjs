@@ -62,7 +62,7 @@ create index if not exists employer_owner_idx on employer_profiles(owner_profile
 create index if not exists employer_status_idx on employer_profiles(verification_status);
 create index if not exists jobs_employer_idx on jobs(employer_id);
 `;
-const send=(res,status,data,headers={})=>{res.writeHead(status,{'content-type':'application/json; charset=utf-8','access-control-allow-origin':process.env.FRONTEND_ORIGIN||'http://localhost:5173','access-control-allow-credentials':'true','access-control-allow-headers':'content-type, authorization','access-control-allow-methods':'GET,POST,PATCH,DELETE,OPTIONS','vary':'Origin','cache-control':'no-store',...headers});res.end(JSON.stringify(data));};
+const send=(res,status,data,headers={})=>{res.writeHead(status,{'content-type':'application/json; charset=utf-8','access-control-allow-origin':process.env.FRONTEND_ORIGIN||'http://localhost:5173','access-control-allow-credentials':'true','access-control-allow-headers':'content-type, authorization, x-nova-sync-secret','access-control-allow-methods':'GET,POST,PATCH,DELETE,OPTIONS','vary':'Origin','cache-control':'no-store',...headers});res.end(JSON.stringify(data));};
 const body=req=>new Promise((resolve,reject)=>{let raw='';req.on('data',c=>{raw+=c;if(raw.length>1000000){reject(new Error('payload_too_large'));req.destroy()}});req.on('end',()=>{try{resolve(raw?JSON.parse(raw):{})}catch{reject(new Error('invalid_json'))}});req.on('error',reject)});
 const requireDb=()=>{if(!pool)throw new Error('DATABASE_URL is not configured');return pool};
 const normalizeArray=v=>Array.isArray(v)?v.map(x=>String(x).trim()).filter(Boolean).slice(0,100):null;
@@ -130,17 +130,26 @@ const server=http.createServer(async(req,res)=>{
    if(!Array.isArray(items))return send(res,502,{error:'invalid_job_feed_format'});
    if(items.length>5000)return send(res,413,{error:'job_feed_too_large'});
    let imported=0,skipped=0;
-   for(const item of items){
-    const job=normalizeFeedJob(item,feedUrl.hostname);
-    if(!job){skipped++;continue}
-    await db.query(`insert into jobs(external_id,title,company,province,city,salary_min_jt,salary_max_jt,work_mode,level,tags,description,source_name,source_url,apply_url,status,posted_at,expires_at)
-     values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,'active',$15,$16)
-     on conflict(source_name,external_id) do update set title=excluded.title,company=excluded.company,province=excluded.province,city=excluded.city,salary_min_jt=excluded.salary_min_jt,salary_max_jt=excluded.salary_max_jt,work_mode=excluded.work_mode,level=excluded.level,tags=excluded.tags,description=excluded.description,source_url=excluded.source_url,apply_url=excluded.apply_url,status='active',posted_at=excluded.posted_at,expires_at=excluded.expires_at,updated_at=now()`,
-    [job.externalId,job.title,job.company,job.province,job.city,job.salaryMin,job.salaryMax,job.workMode,job.level,job.tags,job.description,job.sourceName,job.sourceUrl,job.applyUrl,job.postedAt,job.expiresAt]);
-    imported++;
-   }
-   // Mark stale records inactive, including jobs whose source stopped returning them after expiry.
-   await db.query("update jobs set status='expired',updated_at=now() where status='active' and ((expires_at is not null and expires_at <= now()) or (posted_at is not null and posted_at < now() - interval '60 days'))");
+   // Keep the entire feed import atomic: a database failure must not leave a half-updated catalogue.
+   const client=await db.connect();
+   try{
+    await client.query('begin');
+    for(const item of items){
+     const job=normalizeFeedJob(item,feedUrl.hostname);
+     if(!job){skipped++;continue}
+     await client.query(`insert into jobs(external_id,title,company,province,city,salary_min_jt,salary_max_jt,work_mode,level,tags,description,source_name,source_url,apply_url,status,posted_at,expires_at)
+      values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,'active',$15,$16)
+      on conflict(source_name,external_id) do update set title=excluded.title,company=excluded.company,province=excluded.province,city=excluded.city,salary_min_jt=excluded.salary_min_jt,salary_max_jt=excluded.salary_max_jt,work_mode=excluded.work_mode,level=excluded.level,tags=excluded.tags,description=excluded.description,source_url=excluded.source_url,apply_url=excluded.apply_url,status='active',posted_at=excluded.posted_at,expires_at=excluded.expires_at,updated_at=now()`,
+     [job.externalId,job.title,job.company,job.province,job.city,job.salaryMin,job.salaryMax,job.workMode,job.level,job.tags,job.description,job.sourceName,job.sourceUrl,job.applyUrl,job.postedAt,job.expiresAt]);
+     imported++;
+    }
+    // Expire stale jobs in the same transaction so the catalogue cannot partially refresh.
+    await client.query("update jobs set status='expired',updated_at=now() where status='active' and ((expires_at is not null and expires_at <= now()) or (posted_at is not null and posted_at < now() - interval '60 days'))");
+    await client.query('commit');
+   }catch(error){
+    await client.query('rollback').catch(()=>{});
+    throw error;
+   }finally{client.release()}
    return send(res,200,{ok:true,received:items.length,imported,skipped,source:feedUrl.hostname});
   }
   if(url.pathname==='/api/auth/signup'&&req.method==='POST'){
