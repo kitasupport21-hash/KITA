@@ -1,50 +1,39 @@
-import test, { before, after } from 'node:test';
+import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { Pool } from 'pg';
 
 const databaseUrl = process.env.DATABASE_URL;
-const integrationTest = test('PostgreSQL-backed signup, profile, jobs, saved roles, applications, notifications, and logout work end-to-end', { skip: !databaseUrl });
-let server;
-let pool;
-let baseUrl;
-let port;
 
-before(async () => {
-  if (!databaseUrl) return;
-  pool = new Pool({ connectionString: databaseUrl });
-  await pool.query('select 1');
-  port = 20000 + (process.pid % 20000);
-  baseUrl = `http://127.0.0.1:${port}`;
-  server = spawn(process.execPath, ['server/index.mjs'], {
-    cwd: process.cwd(),
-    env: { ...process.env, PORT: String(port), DATABASE_URL: databaseUrl, FRONTEND_ORIGIN: 'http://localhost:5173', NODE_ENV: 'test' },
-    stdio: 'ignore'
-  });
-  let ready = false;
-  for (let attempt = 0; attempt < 100; attempt++) {
-    if (server.exitCode !== null) throw new Error(`NOVA server exited before readiness (${server.exitCode})`);
-    try {
-      const response = await fetch(`${baseUrl}/api/health`);
-      if (response.ok && (await response.json()).database === true) { ready = true; break; }
-    } catch { /* server is starting */ }
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-  if (!ready) throw new Error('NOVA API did not become ready against PostgreSQL within 10 seconds');
-});
-
-after(async () => {
-  if (server && server.exitCode === null) { server.kill('SIGTERM'); await new Promise(resolve => server.once('exit', resolve)); }
-  if (pool) await pool.end();
-});
-
-integrationTest(async () => {
-  const email = `nova-integration-${process.pid}@example.test`;
+test('PostgreSQL-backed signup, profile, jobs, saved roles, applications, notifications, and logout work end-to-end', { skip: !databaseUrl }, async () => {
+  const pool = new Pool({ connectionString: databaseUrl });
+  let server;
   let jobId = null;
-  const origin = { origin: 'http://localhost:5173' };
-  const jsonHeaders = { ...origin, 'content-type': 'application/json' };
-  let cookie = '';
+  const email = `nova-integration-${process.pid}@example.test`;
+  let baseUrl;
   try {
+    await pool.query('select 1');
+    const port = 20000 + (process.pid % 20000);
+    baseUrl = `http://127.0.0.1:${port}`;
+    server = spawn(process.execPath, ['server/index.mjs'], {
+      cwd: process.cwd(),
+      env: { ...process.env, PORT: String(port), DATABASE_URL: databaseUrl, FRONTEND_ORIGIN: 'http://localhost:5173', NODE_ENV: 'test' },
+      stdio: 'ignore'
+    });
+    let ready = false;
+    for (let attempt = 0; attempt < 100; attempt++) {
+      if (server.exitCode !== null) throw new Error(`NOVA server exited before readiness (${server.exitCode})`);
+      try {
+        const response = await fetch(`${baseUrl}/api/health`);
+        if (response.ok && (await response.json()).database === true) { ready = true; break; }
+      } catch { /* server is starting */ }
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    if (!ready) throw new Error('NOVA API did not become ready against PostgreSQL within 10 seconds');
+
+    const origin = { origin: 'http://localhost:5173' };
+    const jsonHeaders = { ...origin, 'content-type': 'application/json' };
+    let cookie = '';
     const signup = await fetch(`${baseUrl}/api/auth/signup`, { method: 'POST', headers: jsonHeaders, body: JSON.stringify({ name: 'NOVA Integration', email, password: 'correct-horse-battery-staple' }) });
     assert.equal(signup.status, 201, await signup.text());
     const signupPayload = await signup.json();
@@ -90,7 +79,12 @@ integrationTest(async () => {
     assert.equal(login.status, 200, await login.text());
     assert.equal((await login.json()).profile.email, email);
   } finally {
-    await pool.query('delete from profiles where email=$1', [email]);
-    if (jobId) await pool.query('delete from jobs where id=$1', [jobId]);
+    await pool.query('delete from profiles where email=$1', [email]).catch(() => {});
+    if (jobId) await pool.query('delete from jobs where id=$1', [jobId]).catch(() => {});
+    if (server && server.exitCode === null) {
+      server.kill('SIGTERM');
+      await new Promise(resolve => server.once('exit', resolve));
+    }
+    await pool.end();
   }
 });
