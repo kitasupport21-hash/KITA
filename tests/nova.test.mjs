@@ -113,6 +113,19 @@ test('feed import rejects missing location, stale dates, insecure URLs, and inva
   assert.equal(normalizeFeedJob({...base, expiresAt:'2026-10-01'}, 'fallback', now), null);
 });
 
+test('official Kemenkes announcements are date-filtered and linked only to the official domain', async () => {
+  const { parseKemkesGovernmentJobs } = await import('../server/government-jobs.mjs');
+  const html = `
+    <div class="artikel-small"><a href="/id/rekrutmen-verifikator-administrasi-tb-2026" class="link"><h4>Rekrutmen Verifikator Administrasi dan Dokumen Program Tuberkulosis Kementerian Kesehatan 2026</h4></a><span>Selasa 08 September 2026 06:31:14</span></div>
+    <div class="artikel-small"><a href="/id/pengumuman-hasil-seleksi-administrasi-verifikator-tbc-kemenkes-2026" class="link"><h4>Pengumuman Hasil Seleksi Administrasi Verifikator Program Tuberkulosis Kemenkes 2026</h4></a><span>Senin 14 September 2026 09:02:11</span></div>
+    <div class="artikel-small"><a href="https://attacker.example/id/lowongan" class="link"><h4>Rekrutmen Palsu</h4></a><span>Senin 14 September 2026 09:02:11</span></div>`;
+  const rows = parseKemkesGovernmentJobs(html, new Date('2026-10-19T00:00:00Z'));
+  assert.equal(rows.length, 2);
+  assert.equal(rows[0].status, 'selection_update');
+  assert.equal(rows[1].status, 'official_notice');
+  assert.ok(rows.every((row) => row.verifiedSource && row.sourceUrl.startsWith('https://www.kemkes.go.id/id/')));
+});
+
 test('official BKN announcements are dated, linked to the government domain, and distinguish recruitment from results', async () => {
   const { parseBknGovernmentJobs } = await import('../server/government-jobs.mjs');
   const html = `
