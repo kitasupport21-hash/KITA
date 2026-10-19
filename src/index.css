@@ -43,3 +43,13 @@
 .official-job-actions a:last-child{background:var(--accent,#4f46e5);color:#fff}
 .official-feed-updated{margin:10px 0 0;font-size:10px;color:var(--muted,#64748b)}
 @media(max-width:560px){.official-job-card{align-items:flex-start;flex-direction:column}.official-job-actions{width:100%}.official-job-actions a{flex:1;text-align:center}}
+.government-jobs-panel{margin:18px 0;padding:16px;border:1px solid #4f7f70;border-radius:16px;background:var(--panel,#fff)}
+.government-portals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0}
+.government-portals a{display:grid;gap:5px;padding:12px;border:1px solid var(--line,#dbe4ee);border-radius:11px;text-decoration:none;color:inherit;background:var(--soft,#f8fafc)}
+.government-portals strong{font-size:12px}.government-portals small{font-size:10px;color:var(--muted,#64748b);line-height:1.5}
+.government-notice-card{display:grid;gap:7px;padding:13px;border:1px solid var(--line,#dbe4ee);border-radius:12px;background:var(--panel,#fff)}
+.government-notice-card>strong{font-size:13px;line-height:1.5}.government-notice-card>span{font-size:11px;color:var(--muted,#64748b)}.government-notice-card>p{margin:0;font-size:11px;line-height:1.6}.government-notice-card>small{font-size:10px;line-height:1.5;color:var(--muted,#64748b)}
+.government-notice-meta{display:flex;align-items:center;justify-content:space-between;gap:8px}.government-notice-meta>small{font-size:10px;color:var(--muted,#64748b)}
+.government-status{display:inline-flex;width:max-content;max-width:100%;padding:5px 7px;border-radius:7px;background:var(--soft,#f1f5f9);font-size:10px;font-weight:750;color:var(--muted,#64748b)}
+.government-status.recruitment{background:#dcfce7;color:#166534}
+@media(max-width:560px){.government-portals{grid-template-columns:1fr}.government-notice-card .official-job-actions{flex-wrap:wrap}}
