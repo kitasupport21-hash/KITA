@@ -74,4 +74,5 @@ test('preflight requests return credentialed CORS policy', async () => {
   assert.equal(response.status, 204);
   assert.equal(response.headers.get('access-control-allow-origin'), 'http://localhost:5173');
   assert.equal(response.headers.get('access-control-allow-credentials'), 'true');
+  assert.match(response.headers.get('access-control-allow-headers') || '', /x-nova-sync-secret/i);
 });
