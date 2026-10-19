@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { calculateMatch, detectRiskSignals } from '../src/lib/novaEngine.ts';
 import { parseCvText, supportedCvTextType } from '../src/lib/novaCv.ts';
+import { regencyMatchesCity, filterRegenciesForProvince } from '../src/lib/indonesiaRegions.ts';
 
 test('career match scoring stays in range and explains gaps', () => {
   const result = calculateMatch({
@@ -47,4 +48,12 @@ test('Indonesia location reference contains all provinces and regencies with val
   const provinceIds = new Set(regions.provinces.map((item) => item.id));
   assert.ok(regions.regencies.every((item) => provinceIds.has(item.provinceId)));
   assert.equal(new Set(regions.regencies.map((item) => item.id)).size, 514);
+});
+
+test('district matching tolerates common Indonesian city-name prefixes', () => {
+  assert.equal(regencyMatchesCity('Kota Administrasi Jakarta Selatan', 'KOTA ADM. JAKARTA SELATAN'), true);
+  assert.equal(regencyMatchesCity('Kabupaten Solok Selatan', 'KAB. SOLOK SELATAN'), true);
+  assert.equal(regencyMatchesCity('Kota Bandung', 'KABUPATEN BANDUNG'), false);
+  assert.equal(filterRegenciesForProvince('DKI Jakarta').length, 6);
+  assert.equal(filterRegenciesForProvince('All Indonesia').length, 514);
 });
