@@ -5,6 +5,7 @@ import { readFile } from 'node:fs/promises';
 import { Pool } from 'pg';
 import { normalizeFeedJob } from './job-feed.mjs';
 import { getLivePaskerJobs } from './pasker-feed.mjs';
+import { getGovernmentJobAnnouncements } from './government-jobs.mjs';
 
 const port = Number(process.env.PORT || 10000);
 const staticDir = path.resolve(process.cwd(), 'dist');
@@ -30,25 +31,9 @@ create table if not exists employer_profiles (
  verification_notes text, verified_at timestamptz, created_at timestamptz not null default now(), updated_at timestamptz not null default now()
 );
 create table if not exists employer_verification_events (
- id uuid primary key default gen_random_uuid(), employer_id uuid not null refere
+ id uuid 
 …[1 chars truncated — re-run with head/grep/tail for full output]…
-NS')return send(res,204,{});
- if(['POST','PUT','PATCH','DELETE'].includes(req.method)){
-  const origin=req.headers.origin;const allowedOrigin=process.env.FRONTEND_ORIGIN||'http://localhost:5173';
-  const hasSessionCookie=String(req.headers.cookie||'').split(';').some(part=>part.trim().startsWith('nova_session='));
-  if((origin&&origin!==allowedOrigin)||(hasSessionCookie&&!origin))return send(res,403,{error:'origin_not_allowed'});
- }
- if(rateLimited(req))return send(res,429,{error:'rate_limited',retryAfterSeconds:Math.ceil(RATE_WINDOW_MS/1000)});
- try{
-  const url=new URL(req.url||'/',`http://${req.headers.host||'localhost'}`);
-  if(req.method==='GET'&&!url.pathname.startsWith('/api/')){
-   let requestedPath;
-   try{requestedPath=decodeURIComponent(url.pathname)}catch{return send(res,400,{error:'invalid_path'})}
-   let filePath=path.resolve(staticDir,'.'+requestedPath);
-   if(filePath!==staticDir&&!filePath.startsWith(staticDir+path.sep))return send(res,403,{error:'forbidden'});
-   let data;
-   try{data=await readFile(filePath)}catch{
-    if(path.extname(filePath)||requestedPath.startsWith('/assets/'))return send(res,404,{error:'not_found'});
+Path.startsWith('/assets/'))return send(res,404,{error:'not_found'});
     filePath=path.join(staticDir,'index.html');
     try{data=await readFile(filePath)}catch{return send(res,503,{error:'frontend_build_missing'})}
    }
@@ -59,6 +44,9 @@ NS')return send(res,204,{});
   }
   if(url.pathname==='/api/public/jobs/pasker'&&req.method==='GET'){
    try{const result=await getLivePaskerJobs();return send(res,200,{...result,source:'Pasker ID miniJobi',live:true,notice:result.jobs.length?'Current official listings; apply through Pasker ID':'No unexpired openings were found on the official miniJobi page at this check.'},{'cache-control':'public, max-age=300, stale-while-revalidate=300'});}catch(error){console.error('Pasker live feed unavailable',error.message);return send(res,502,{error:'official_job_source_unavailable',sourceUrl:'https://paskerid.kemnaker.go.id/miniJobi',live:false,notice:'Could not refresh official listings right now. Open Pasker ID directly to check current vacancies.'});}
+  }
+  if(url.pathname==='/api/public/government-jobs'&&req.method==='GET'){
+   try{const result=await getGovernmentJobAnnouncements();const announcements=result.notices.map(item=>({id:item.id,title:item.title,agency:item.agency,category:item.status==='official_notice'?'recruitment':'announcement',summary:item.excerpt,sourceName:'BKN RI',sourceUrl:item.sourceUrl,applyUrl:item.sourceUrl,postedAt:item.publishedAt,verifiedSource:item.verifiedSource,applicationStatus:item.statusLabel}));return send(res,200,{...result,announcements,source:'Badan Kepegawaian Negara (BKN RI)',live:true,officialPortal:'https://sscasn.bkn.go.id/',notice:result.notice},{'cache-control':'public, max-age=600, stale-while-revalidate=600'});}catch(error){console.error('BKN job announcements unavailable',error.message);return send(res,502,{error:'official_government_source_unavailable',sourceUrl:'https://www.bkn.go.id/category/publikasi/pengumuman/',officialPortal:'https://sscasn.bkn.go.id/',live:false,notice:'Could not refresh BKN job announcements. Open the official BKN and SSCASN portals directly.'});}
   }
   const db=requireDb();
   if(url.pathname==='/api/health'&&req.method==='GET'){const r=await db.query('select now() as now');return send(res,200,{ok:true,database:true,now:r.rows[0].now,jobFeedConfigured:Boolean(process.env.NOVA_JOB_FEED_URL)})}
