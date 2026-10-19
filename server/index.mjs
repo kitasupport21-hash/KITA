@@ -147,7 +147,7 @@ const server=http.createServer(async(req,res)=>{
    await db.query('update notifications set read_at=now() where profile_id=$1 and read_at is null',[session.profileId]);
    return send(res,200,{ok:true});
   }
-  const notificationMatch=url.pathname.match(/^\\/api\\/notifications\\/([0-9a-f-]+)\\/read$/i);
+  const notificationMatch=url.pathname.match(/^\/api\/notifications\/([0-9a-f-]+)\/read$/i);
   if(notificationMatch&&req.method==='PATCH'){
    if(!session)return send(res,401,{error:'unauthorized'});
    const r=await db.query('update notifications set read_at=coalesce(read_at,now()) where id=$1 and profile_id=$2 returning id',[notificationMatch[1],session.profileId]);
