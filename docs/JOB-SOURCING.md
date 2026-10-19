@@ -35,3 +35,17 @@ The regional fallback includes role families for AI/data, software/cybersecurity
 ## Authorized source integration blocker
 
 Kemnaker's JOSS documentation describes an official create/update vacancy API and a lookup-by-ID endpoint; both show request-signing headers (`Client-Id`, `Request-Id`, `Request-Timestamp`, and `Signature`): https://joss.docs.kemnaker.go.id/put-job-vacancy-13014910e0 and https://joss.docs.kemnaker.go.id/find-job-vacancy-13014939e0. I did not find a documented anonymous list/search endpoint in the public API docs. This is an authenticated integration interface, not a ready-to-use public vacancy feed. NOVA must only connect to it after the owner obtains approved API access and the required credentials/signing specification from Kemnaker. Do not put those credentials in frontend code or commit them to the repository. Until access is supplied, the app uses public, attributable discovery links and does not fabricate database records. The sync endpoint now commits each accepted feed refresh as one database transaction, so a failed write rolls the whole refresh back instead of leaving a partial catalogue.
+
+
+## Scheduled refresh runner (ready to configure, not yet scheduled)
+
+The repository includes `npm run sync:jobs` (implemented by `scripts/sync-jobs.mjs`) for a Render Cron Job or another trusted scheduler. It POSTs only to the exact `/api/admin/jobs/sync` endpoint over HTTPS, sends `NOVA_SYNC_SECRET` in a request header, times out after 20 seconds, validates the response shape, and prints only safe counts/source metadata (never the secret). A non-2xx response or unexpected result exits non-zero so the scheduler can flag the run.
+
+To enable it after an authorized feed is configured:
+
+1. Set `NOVA_JOB_FEED_URL` and a long random `NOVA_SYNC_SECRET` on the NOVA API service.
+2. Create a separate scheduled runner with build command `npm install`, start command `npm run sync:jobs`, and a conservative schedule such as `17 */6 * * *` (every six hours at minute 17).
+3. Set `NOVA_SYNC_API_URL` to the deployed API's exact `https://<your-domain>/api/admin/jobs/sync` URL and set the identical `NOVA_SYNC_SECRET` on the runner. Never place the secret in source control or frontend variables.
+4. Run once manually and verify received/imported/skipped counts and database rows before relying on the schedule.
+
+The scheduled service has intentionally **not** been created or deployed. It cannot import real jobs until the owner has an authorized feed URL and credentials; scheduling a runner without those would just produce repeated failures. Do not merge/deploy this branch until the owner approves.
