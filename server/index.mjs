@@ -1,8 +1,11 @@
 import http from 'node:http';
 import crypto from 'node:crypto';
+import path from 'node:path';
+import { readFile } from 'node:fs/promises';
 import { Pool } from 'pg';
 
 const port = Number(process.env.PORT || 10000);
+const staticDir = path.resolve(process.cwd(), 'dist');
 const databaseUrl = process.env.DATABASE_URL;
 const pool = databaseUrl ? new Pool({ connectionString: databaseUrl, ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false, max: 10 }) : null;
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30;
@@ -111,38 +114,6 @@ const server=http.createServer(async(req,res)=>{
    }
    return send(res,200,{ok:true,received:items.length,imported,skipped,source:feedUrl.hostname});
   }
-  if(url.pathname==='/api/admin/jobs/sync'&&req.method==='POST'){
-   const expected=process.env.NOVA_SYNC_SECRET||'';
-   const supplied=String(req.headers['x-nova-sync-secret']||'');
-   if(!expected)return send(res,503,{error:'sync_secret_not_configured'});
-   const expectedBuffer=Buffer.from(expected),suppliedBuffer=Buffer.from(supplied);
-   if(expectedBuffer.length!==suppliedBuffer.length||!crypto.timingSafeEqual(expectedBuffer,suppliedBuffer))return send(res,403,{error:'forbidden'});
-   if(!process.env.NOVA_JOB_FEED_URL)return send(res,503,{error:'job_feed_not_configured'});
-   let feedUrl;try{feedUrl=new URL(process.env.NOVA_JOB_FEED_URL)}catch{return send(res,503,{error:'invalid_job_feed_url'})}
-   if(feedUrl.protocol!=='https:'&&feedUrl.hostname!=='localhost')return send(res,503,{error:'job_feed_must_use_https'});
-   const response=await fetch(feedUrl,{headers:{accept:'application/json'},signal:AbortSignal.timeout(15000)});
-   if(!response.ok)return send(res,502,{error:'job_feed_request_failed',upstreamStatus:response.status});
-   const payload=await response.json();const items=Array.isArray(payload)?payload:payload?.jobs;
-   if(!Array.isArray(items))return send(res,502,{error:'invalid_job_feed_format'});
-   if(items.length>5000)return send(res,413,{error:'job_feed_too_large'});
-   let imported=0,skipped=0;
-   for(const item of items){
-    const externalId=String(item?.externalId??item?.external_id??'').trim().slice(0,200);
-    const title=String(item?.title||'').trim().slice(0,200),company=String(item?.company||'').trim().slice(0,200);
-    const sourceName=String(item?.sourceName??item?.source_name??feedUrl.hostname).trim().slice(0,120);
-    if(!externalId||!title||!company||!sourceName){skipped++;continue}
-    const safeUrl=value=>{try{const u=new URL(String(value||''));return ['https:','http:'].includes(u.protocol)?u.toString().slice(0,2000):null}catch{return null}};
-    const tags=Array.isArray(item.tags)?item.tags.map(x=>String(x).trim()).filter(Boolean).slice(0,30):[];
-    const numberOrNull=value=>value==null||value===''||!Number.isFinite(Number(value))?null:Number(value);
-    const postedAt=item.postedAt??item.posted_at;const postedDate=postedAt&&Number.isFinite(Date.parse(postedAt))?new Date(postedAt).toISOString():null;
-    await db.query(`insert into jobs(external_id,title,company,province,city,salary_min_jt,salary_max_jt,work_mode,level,tags,description,source_name,source_url,apply_url,status,posted_at)
-     values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,'active',$15)
-     on conflict(source_name,external_id) do update set title=excluded.title,company=excluded.company,province=excluded.province,city=excluded.city,salary_min_jt=excluded.salary_min_jt,salary_max_jt=excluded.salary_max_jt,work_mode=excluded.work_mode,level=excluded.level,tags=excluded.tags,description=excluded.description,source_url=excluded.source_url,apply_url=excluded.apply_url,status='active',posted_at=excluded.posted_at,updated_at=now()`,
-    [externalId,title,company,String(item.province||'').slice(0,120)||null,String(item.city||'').slice(0,120)||null,numberOrNull(item.salaryMinJt??item.salary_min_jt),numberOrNull(item.salaryMaxJt??item.salary_max_jt),String(item.workMode??item.work_mode??'').slice(0,40)||null,String(item.level||'').slice(0,40)||null,tags,String(item.description||'').slice(0,12000)||null,sourceName,safeUrl(item.sourceUrl??item.source_url),safeUrl(item.applyUrl??item.apply_url),postedDate]);
-    imported++;
-   }
-   return send(res,200,{ok:true,received:items.length,imported,skipped,source:feedUrl.hostname});
-  }
   if(url.pathname==='/api/auth/signup'&&req.method==='POST'){
    const d=await body(req);const email=String(d.email||'').trim().toLowerCase();const password=String(d.password||'');const name=String(d.name||'').trim();
    if(!/^\S+@\S+\.\S+$/.test(email))return send(res,400,{error:'invalid_email'});if(password.length<8||password.length>200)return send(res,400,{error:'invalid_password'});if(name.length>120)return send(res,400,{error:'invalid_name'});
@@ -217,6 +188,22 @@ const server=http.createServer(async(req,res)=>{
    const r=await db.query('update notifications set read_at=coalesce(read_at,now()) where id=$1 and profile_id=$2 returning id',[notificationMatch[1],session.profileId]);
    if(!r.rowCount)return send(res,404,{error:'notification_not_found'});
    return send(res,200,{ok:true});
+  }
+  if(req.method==='GET'&&!url.pathname.startsWith('/api/')){
+   let requestedPath;
+   try{requestedPath=decodeURIComponent(url.pathname)}catch{return send(res,400,{error:'invalid_path'})}
+   let filePath=path.resolve(staticDir,'.'+requestedPath);
+   if(filePath!==staticDir&&!filePath.startsWith(staticDir+path.sep))return send(res,403,{error:'forbidden'});
+   let data;
+   try{data=await readFile(filePath)}catch{
+    if(path.extname(filePath)||requestedPath.startsWith('/assets/'))return send(res,404,{error:'not_found'});
+    filePath=path.join(staticDir,'index.html');
+    try{data=await readFile(filePath)}catch{return send(res,503,{error:'frontend_build_missing'})}
+   }
+   const ext=path.extname(filePath).toLowerCase();
+   const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.ico':'image/x-icon','.json':'application/json; charset=utf-8','.woff':'font/woff','.woff2':'font/woff2'};
+   res.writeHead(200,{'content-type':types[ext]||'application/octet-stream','cache-control':ext==='.html'?'no-cache':'public, max-age=31536000, immutable','x-content-type-options':'nosniff'});
+   return res.end(data);
   }
   return send(res,404,{error:'not_found'});
  }catch(error){console.error(error);const status=error.message==='DATABASE_URL is not configured'?503:error.message==='invalid_json'?400:error.message==='payload_too_large'?413:500;return send(res,status,{error:status===500?'internal_server_error':error.message})}
