@@ -1,12 +1,12 @@
 import { useEffect } from 'react';
 import type { ApiProfile } from '../lib/novaApi';
 
-type Props = { onAuthenticated: (profile: ApiProfile) => void; initialError?: string };
+type Props = { onAuthenticated: (profile: ApiProfile) => void };
 
-const guestProfile: ApiProfile = {
+const previewProfile: ApiProfile = {
   id: 'preview-guest',
-  email: 'guest@preview.nova',
-  name: 'NOVA Guest',
+  email: 'preview@nova.local',
+  name: 'NOVA Preview',
   emailVerified: false,
   skills: [],
   preferredModes: [],
@@ -15,16 +15,10 @@ const guestProfile: ApiProfile = {
   minimumSalaryJt: 0,
 };
 
-/**
- * Preview-only guest entry point.
- * Authentication is intentionally bypassed for the NOVA preview so the product
- * can be reviewed without creating an account. Restore the real NovaAuth form
- * before production launch.
- */
+// Preview mode has no login or signup screen. The workspace opens directly.
 export default function NovaAuth({ onAuthenticated }: Props) {
   useEffect(() => {
-    onAuthenticated(guestProfile);
+    onAuthenticated(previewProfile);
   }, [onAuthenticated]);
-
   return null;
 }
