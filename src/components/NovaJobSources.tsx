@@ -49,24 +49,25 @@ export default function NovaJobSources({ keyword = '', province = 'All Indonesia
   const [governmentFeed, setGovernmentFeed] = useState<GovernmentFeed | null>(null);
   const [governmentLoading, setGovernmentLoading] = useState(true);
   const [governmentError, setGovernmentError] = useState('');
+  const [refreshKey, setRefreshKey] = useState(0);
   useEffect(() => {
     let cancelled = false;
-    fetch('/api/public/jobs/pasker', { headers: { accept: 'application/json' } })
+    fetch('/api/public/jobs/pasker', { headers: { accept: 'application/json' }, cache: 'no-store' })
       .then(async (response) => { const data = await response.json(); if (!response.ok) throw new Error(data.notice || data.error || 'Official source unavailable'); return data as OfficialFeed; })
       .then((data) => { if (!cancelled) { setOfficialFeed(data); setOfficialError(''); } })
       .catch((error: unknown) => { if (!cancelled) setOfficialError(error instanceof Error ? error.message : 'Official source unavailable'); })
       .finally(() => { if (!cancelled) setOfficialLoading(false); });
     return () => { cancelled = true; };
-  }, []);
+  }, [refreshKey]);
   useEffect(() => {
     let cancelled = false;
-    fetch('/api/public/government-jobs', { headers: { accept: 'application/json' } })
+    fetch('/api/public/government-jobs', { headers: { accept: 'application/json' }, cache: 'no-store' })
       .then(async (response) => { const data = await response.json(); if (!response.ok) throw new Error(data.notice || data.error || 'Government announcements unavailable'); return data as GovernmentFeed; })
       .then((data) => { if (!cancelled) { setGovernmentFeed(data); setGovernmentError(''); } })
       .catch((error: unknown) => { if (!cancelled) setGovernmentError(error instanceof Error ? error.message : 'Government announcements unavailable'); })
       .finally(() => { if (!cancelled) setGovernmentLoading(false); });
     return () => { cancelled = true; };
-  }, []);
+  }, [refreshKey]);
   const availableRegencies = useMemo(() => REGENCIES
     .filter((item) => !selectedProvince || item.provinceId === selectedProvince)
     .slice().sort((a, b) => a.name.localeCompare(b.name, 'id')), [selectedProvince]);
@@ -77,7 +78,7 @@ export default function NovaJobSources({ keyword = '', province = 'All Indonesia
   const sources = useMemo(() => buildSources(effectiveKeyword, effectiveLocation), [effectiveKeyword, effectiveLocation]);
 
   return <section className="source-panel" aria-label="External Indonesian job portals">
-    <div className="source-heading"><div><span className="eyebrow">REGIONAL JOB SEARCH</span><h3>Find opportunities by kabupaten / kota</h3></div><span className="source-live-label">External source search</span></div>
+    <div className="source-heading"><div><span className="eyebrow">REGIONAL JOB SEARCH</span><h3>Find opportunities by kabupaten / kota</h3></div><button type="button" className="source-live-label source-refresh-button" disabled={officialLoading || governmentLoading} onClick={() => { setOfficialLoading(true); setGovernmentLoading(true); setOfficialError(''); setGovernmentError(''); setRefreshKey((value) => value + 1); }}>{officialLoading || governmentLoading ? 'Memeriksa…' : '↻ Perbarui lowongan'}</button></div>
     <p className="source-note">Pilih provinsi dan kabupaten/kota agar setiap pencarian lebih relevan. NOVA membuka hasil pencarian terbaru dari portal kerja; lowongan eksternal belum dianggap sebagai listing terverifikasi di database NOVA. Periksa tanggal, perusahaan, lokasi, dan tautan lamaran sebelum melamar.</p>
 
     <div className="source-filters">
