@@ -17,3 +17,14 @@
 .source-card small{margin-top:4px;font-size:11px;line-height:1.35;color:var(--muted,#64748b)}
 .source-arrow{margin-left:auto;font-size:13px;color:var(--muted,#64748b)}
 @media(max-width:560px){.source-panel{padding:14px}.source-grid{grid-template-columns:1fr}.source-card{padding:10px}}
+.source-filters{display:grid;grid-template-columns:1fr 1.5fr 1.5fr;gap:10px;margin:16px 0}
+.source-filters label{display:grid;gap:6px;font-size:11px;font-weight:700;color:var(--muted,#64748b)}
+.source-filters select,.source-filters input{width:100%;min-width:0;background:var(--panel,#fff);color:inherit;border:1px solid var(--line,#dbe4ee);border-radius:10px;padding:11px;font:inherit;font-size:12px;outline-offset:2px}
+.future-role-heading,.source-results-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:16px 0 9px;font-size:12px}
+.future-role-heading span,.source-results-heading span{font-size:11px;color:var(--muted,#64748b)}
+.future-role-chips{display:flex;flex-wrap:wrap;gap:7px}
+.future-role-chip{border:1px solid var(--line,#dbe4ee);border-radius:999px;padding:8px 10px;background:transparent;color:inherit;font-size:11px;font-weight:650;cursor:pointer}
+.future-role-chip.active{border-color:var(--accent,#6478ff);background:var(--soft,#eef2ff);color:var(--accent,#4f46e5)}
+.source-attribution{margin:14px 0 0;font-size:10px;line-height:1.5;color:var(--muted,#64748b)}
+.source-attribution a{color:inherit;text-decoration:underline}
+@media(max-width:700px){.source-filters{grid-template-columns:1fr}.source-heading h3{font-size:16px}}
