@@ -52,6 +52,7 @@ test('Indonesia location reference contains all provinces and regencies with val
 
 test('district matching tolerates common Indonesian city-name prefixes', () => {
   assert.equal(regencyMatchesCity('Kota Administrasi Jakarta Selatan', 'KOTA ADM. JAKARTA SELATAN'), true);
+  assert.equal(regencyMatchesCity('Kota Administrasi Jakarta Selatan', 'Jakarta Selatan'), true);
   assert.equal(regencyMatchesCity('Kabupaten Solok Selatan', 'KAB. SOLOK SELATAN'), true);
   assert.equal(regencyMatchesCity('Kota Bandung', 'KABUPATEN BANDUNG'), false);
   assert.equal(filterRegenciesForProvince('DKI Jakarta').length, 6);
