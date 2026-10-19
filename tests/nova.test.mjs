@@ -60,3 +60,40 @@ test('district matching tolerates common Indonesian city-name prefixes', () => {
   assert.equal(filterRegenciesForProvince('DKI Jakarta').length, 6);
   assert.equal(filterRegenciesForProvince('All Indonesia').length, 514);
 });
+
+test('official Pasker feed keeps only current listings with direct detail and apply links', async () => {
+  const { parsePaskerMiniJobi } = await import('../server/pasker-feed.mjs');
+  const html = `
+    <div class="col-lg-4 col-md-6"><div class="card"><div class="card-body">
+      <h3 class="h6 fw-bold mb-2">Operator Produksi</h3><div class="small text-muted mb-3">PT Contoh Industri</div>
+      <span class="badge text-bg-light border">KAB. BEKASI</span><span class="badge text-bg-light border">Full-time</span><span class="badge text-bg-light border">Manufaktur</span>
+      <p class="mb-3 text-secondary">Mengoperasikan lini produksi.</p><div><strong>Gaji:</strong> Rp 5.000.000</div><div><strong>Batas Lamar:</strong> 25 Des 2026</div>
+      <a href="https://paskerid.kemnaker.go.id/miniJobi/100" class="btn">Lihat Detail</a>
+    </div></div></div>
+    <div class="col-lg-4 col-md-6"><div class="card"><div class="card-body">
+      <h3 class="h6 fw-bold mb-2">Lowongan Kedaluwarsa</h3><div class="small text-muted mb-3">PT Lama</div>
+      <span class="badge">KOTA BANDUNG</span><span class="badge">Full-time</span><span class="badge">Teknologi</span>
+      <p class="mb-3 text-secondary">Sudah tutup.</p><div><strong>Batas Lamar:</strong> 25 Apr 2026</div>
+      <a href="https://paskerid.kemnaker.go.id/miniJobi/99" class="btn">Lihat Detail</a>
+    </div></div></div>`;
+  const jobs = parsePaskerMiniJobi(html, new Date('2026-10-19T00:00:00Z'));
+  assert.equal(jobs.length, 1);
+  assert.equal(jobs[0].title, 'Operator Produksi');
+  assert.equal(jobs[0].company, 'PT Contoh Industri');
+  assert.equal(jobs[0].city, 'KAB. BEKASI');
+  assert.equal(jobs[0].sourceUrl, 'https://paskerid.kemnaker.go.id/miniJobi/100');
+  assert.equal(jobs[0].applyUrl, 'https://paskerid.kemnaker.go.id/register?job=100');
+  assert.equal(jobs[0].verifiedSource, true);
+});
+
+test('feed import rejects missing location, stale dates, insecure URLs, and invalid salary ranges', async () => {
+  const { normalizeFeedJob } = await import('../server/job-feed.mjs');
+  const now = new Date('2026-10-19T00:00:00Z');
+  const base = { externalId:'abc-1', title:'Warehouse Operator', company:'PT Contoh', sourceName:'Partner', province:'Jawa Barat', city:'Kab. Bekasi', postedAt:'2026-10-01', sourceUrl:'https://jobs.example/roles/abc-1', applyUrl:'https://jobs.example/apply/abc-1' };
+  assert.equal(normalizeFeedJob(base, 'fallback', now)?.externalId, 'abc-1');
+  assert.equal(normalizeFeedJob({...base, city:''}, 'fallback', now), null);
+  assert.equal(normalizeFeedJob({...base, postedAt:'2026-01-01'}, 'fallback', now), null);
+  assert.equal(normalizeFeedJob({...base, sourceUrl:'http://jobs.example/roles/abc-1', applyUrl:'http://jobs.example/apply/abc-1'}, 'fallback', now), null);
+  assert.equal(normalizeFeedJob({...base, salaryMinJt:10, salaryMaxJt:4}, 'fallback', now), null);
+  assert.equal(normalizeFeedJob({...base, expiresAt:'2026-10-01'}, 'fallback', now), null);
+});
