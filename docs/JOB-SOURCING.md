@@ -18,4 +18,4 @@ The regional fallback includes role families for AI/data, software/cybersecurity
 
 ## Regional reference data
 
-`src/data/indonesia-regions.json` includes 38 provinces and 514 kabupaten/kota, with province parent IDs. Upstream source: `https://github.com/izzulabadi/api-wilayah-indonesia-2026`. Check upstream updates and verify regional names before changing the dataset.
+`src/data/indonesia-provinces.json` and three chunked `src/data/indonesia-regencies-*.json` files include 38 provinces and 514 kabupaten/kota, with province parent IDs. Upstream source: `https://github.com/izzulabadi/api-wilayah-indonesia-2026`. Check upstream updates and verify regional names before changing the dataset.
