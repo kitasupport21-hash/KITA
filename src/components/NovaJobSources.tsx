@@ -1,12 +1,12 @@
 import React, { useMemo, useState } from 'react';
-import regions from '../data/indonesia-regions.json';
-import { displayProvinceName } from '../lib/indonesiaRegions';
+import provinceData from '../data/indonesia-provinces.json';
+import { displayProvinceName, INDONESIAN_REGENCIES } from '../lib/indonesiaRegions';
 
 type Props = { keyword?: string; province?: string };
 type Province = { id: string; name: string };
 type Regency = { id: string; provinceId: string; name: string };
-const PROVINCES = regions.provinces as Province[];
-const REGENCIES = regions.regencies as Regency[];
+const PROVINCES = provinceData as Province[];
+const REGENCIES = INDONESIAN_REGENCIES as Regency[];
 
 const FUTURE_ROLES = [
   { label: 'AI & Data', query: 'AI data analyst machine learning' },
