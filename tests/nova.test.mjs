@@ -86,6 +86,21 @@ test('official Pasker feed keeps only current listings with direct detail and ap
   assert.equal(jobs[0].verifiedSource, true);
 });
 
+test('Pasker live reader checks linked listing pages and deduplicates current official vacancies', async () => {
+  const { getLivePaskerJobs } = await import('../server/pasker-feed.mjs');
+  const card = (id, title, deadline) => `<div class="col-lg-4 col-md-6"><div class="card"><h3>${title}</h3><div class="small text-muted mb-3">PT Contoh</div><span class="badge">KOTA BANDUNG</span><span class="badge">Full-time</span><span class="badge">Administrasi</span><p class="mb-3 text-secondary">Pekerjaan resmi.</p><div><strong>Batas Lamar:</strong> ${deadline}</div><a href="https://paskerid.kemnaker.go.id/miniJobi/${id}">Detail</a></div></div></div>`;
+  const pages = new Map([
+    ['https://paskerid.kemnaker.go.id/miniJobi', `<a href="http://paskerid.kemnaker.go.id/miniJobi?page=2">2</a>${card('10','Lowongan Lama','25 Apr 2026')}`],
+    ['https://paskerid.kemnaker.go.id/miniJobi?page=2', card('20','Staf Administrasi','25 Des 2026') + card('20','Staf Administrasi','25 Des 2026')],
+  ]);
+  const calls = [];
+  const result = await getLivePaskerJobs({ now: new Date('2026-10-19T00:00:00Z'), fetchImpl: async (url) => { calls.push(url); return { ok: pages.has(url), status: pages.has(url) ? 200 : 404, text: async () => pages.get(url) || '' }; } });
+  assert.deepEqual(calls, ['https://paskerid.kemnaker.go.id/miniJobi','https://paskerid.kemnaker.go.id/miniJobi?page=2']);
+  assert.equal(result.pagesChecked, 2);
+  assert.equal(result.jobs.length, 1);
+  assert.equal(result.jobs[0].title, 'Staf Administrasi');
+});
+
 test('feed import rejects missing location, stale dates, insecure URLs, and invalid salary ranges', async () => {
   const { normalizeFeedJob } = await import('../server/job-feed.mjs');
   const now = new Date('2026-10-19T00:00:00Z');
