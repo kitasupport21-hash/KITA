@@ -80,7 +80,24 @@ const server=http.createServer(async(req,res)=>{
  if(req.method==='OPTIONS')return send(res,204,{});
  if(rateLimited(req))return send(res,429,{error:'rate_limited',retryAfterSeconds:Math.ceil(RATE_WINDOW_MS/1000)});
  try{
-  const url=new URL(req.url||'/',`http://${req.headers.host||'localhost'}`);const db=requireDb();
+  const url=new URL(req.url||'/',`http://${req.headers.host||'localhost'}`);
+  if(req.method==='GET'&&!url.pathname.startsWith('/api/')){
+   let requestedPath;
+   try{requestedPath=decodeURIComponent(url.pathname)}catch{return send(res,400,{error:'invalid_path'})}
+   let filePath=path.resolve(staticDir,'.'+requestedPath);
+   if(filePath!==staticDir&&!filePath.startsWith(staticDir+path.sep))return send(res,403,{error:'forbidden'});
+   let data;
+   try{data=await readFile(filePath)}catch{
+    if(path.extname(filePath)||requestedPath.startsWith('/assets/'))return send(res,404,{error:'not_found'});
+    filePath=path.join(staticDir,'index.html');
+    try{data=await readFile(filePath)}catch{return send(res,503,{error:'frontend_build_missing'})}
+   }
+   const ext=path.extname(filePath).toLowerCase();
+   const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.ico':'image/x-icon','.json':'application/json; charset=utf-8','.woff':'font/woff','.woff2':'font/woff2'};
+   res.writeHead(200,{'content-type':types[ext]||'application/octet-stream','cache-control':ext==='.html'?'no-cache':'public, max-age=31536000, immutable','x-content-type-options':'nosniff'});
+   return res.end(data);
+  }
+  const db=requireDb();
   if(url.pathname==='/api/health'&&req.method==='GET'){const r=await db.query('select now() as now');return send(res,200,{ok:true,database:true,now:r.rows[0].now,jobFeedConfigured:Boolean(process.env.NOVA_JOB_FEED_URL)})}
   if(url.pathname==='/api/admin/jobs/sync'&&req.method==='POST'){
    const expected=process.env.NOVA_SYNC_SECRET||'';
@@ -188,22 +205,6 @@ const server=http.createServer(async(req,res)=>{
    const r=await db.query('update notifications set read_at=coalesce(read_at,now()) where id=$1 and profile_id=$2 returning id',[notificationMatch[1],session.profileId]);
    if(!r.rowCount)return send(res,404,{error:'notification_not_found'});
    return send(res,200,{ok:true});
-  }
-  if(req.method==='GET'&&!url.pathname.startsWith('/api/')){
-   let requestedPath;
-   try{requestedPath=decodeURIComponent(url.pathname)}catch{return send(res,400,{error:'invalid_path'})}
-   let filePath=path.resolve(staticDir,'.'+requestedPath);
-   if(filePath!==staticDir&&!filePath.startsWith(staticDir+path.sep))return send(res,403,{error:'forbidden'});
-   let data;
-   try{data=await readFile(filePath)}catch{
-    if(path.extname(filePath)||requestedPath.startsWith('/assets/'))return send(res,404,{error:'not_found'});
-    filePath=path.join(staticDir,'index.html');
-    try{data=await readFile(filePath)}catch{return send(res,503,{error:'frontend_build_missing'})}
-   }
-   const ext=path.extname(filePath).toLowerCase();
-   const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.ico':'image/x-icon','.json':'application/json; charset=utf-8','.woff':'font/woff','.woff2':'font/woff2'};
-   res.writeHead(200,{'content-type':types[ext]||'application/octet-stream','cache-control':ext==='.html'?'no-cache':'public, max-age=31536000, immutable','x-content-type-options':'nosniff'});
-   return res.end(data);
   }
   return send(res,404,{error:'not_found'});
  }catch(error){console.error(error);const status=error.message==='DATABASE_URL is not configured'?503:error.message==='invalid_json'?400:error.message==='payload_too_large'?413:500;return send(res,status,{error:status===500?'internal_server_error':error.message})}
