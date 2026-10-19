@@ -78,6 +78,11 @@ setInterval(async()=>{const now=Date.now();for(const [key,b] of rateBuckets)if(n
 async function start(){if(pool)await pool.query(schema);server.listen(port,'0.0.0.0',()=>console.log(`NOVA API listening on ${port}`))}
 const server=http.createServer(async(req,res)=>{
  if(req.method==='OPTIONS')return send(res,204,{});
+ if(['POST','PUT','PATCH','DELETE'].includes(req.method)){
+  const origin=req.headers.origin;const allowedOrigin=process.env.FRONTEND_ORIGIN||'http://localhost:5173';
+  const hasSessionCookie=String(req.headers.cookie||'').split(';').some(part=>part.trim().startsWith('nova_session='));
+  if((origin&&origin!==allowedOrigin)||(hasSessionCookie&&!origin))return send(res,403,{error:'origin_not_allowed'});
+ }
  if(rateLimited(req))return send(res,429,{error:'rate_limited',retryAfterSeconds:Math.ceil(RATE_WINDOW_MS/1000)});
  try{
   const url=new URL(req.url||'/',`http://${req.headers.host||'localhost'}`);
