@@ -1,6 +1,9 @@
 const BASE = 'https://paskerid.kemnaker.go.id';
+const BKN_BASE = 'https://www.bkn.go.id';
+const BKN_ANNOUNCEMENTS = `${BKN_BASE}/category/publikasi/pengumuman/`;
+const OFFICIAL_CASNS = 'https://sscasn.bkn.go.id/';
 const MONTHS = { jan:0, januari:0, feb:1, februari:1, mar:2, maret:2, apr:3, april:3, mei:4, may:4, jun:5, juni:5, jul:6, juli:6, agu:7, agustus:7, sep:8, september:8, okt:9, oktober:9, nov:10, november:10, des:11, desember:11 };
-const decode = (value) => String(value || '').replace(/&amp;/g, '&').replace(/&nbsp;/g, ' ').replace(/&quot;/g, '"').replace(/&#039;|&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+const decode = (value) => String(value || '').replace(/&amp;/g, '&').replace(/&nbsp;/g, ' ').replace(/&quot;/g, '"').replace(/&#039;|&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&hellip;/g, '…').replace(/&ndash;/g, '–').replace(/&mdash;/g, '—').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 function parseDeadline(value) {
   const match = String(value || '').match(/(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})/i);
   if (!match) return null;
