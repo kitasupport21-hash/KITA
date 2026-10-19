@@ -38,3 +38,13 @@ test('CV upload type gate does not pretend PDF/DOCX extraction exists', () => {
   assert.equal(supportedCvTextType('application/pdf', 'cv.pdf'), false);
   assert.equal(supportedCvTextType('', 'cv.docx'), false);
 });
+
+test('Indonesia location reference contains all provinces and regencies with valid parent links', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const regions = JSON.parse(await readFile(new URL('../src/data/indonesia-regions.json', import.meta.url), 'utf8'));
+  assert.equal(regions.provinces.length, 38);
+  assert.equal(regions.regencies.length, 514);
+  const provinceIds = new Set(regions.provinces.map((item) => item.id));
+  assert.ok(regions.regencies.every((item) => provinceIds.has(item.provinceId)));
+  assert.equal(new Set(regions.regencies.map((item) => item.id)).size, 514);
+});
