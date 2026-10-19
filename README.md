@@ -4,24 +4,23 @@ NOVA is a separate career platform built from scratch. It does not reuse the old
 
 ## Current product capabilities
 
-- Persistent account authentication and PostgreSQL-backed sessions
+- PostgreSQL-backed accounts and sessions, with dedicated sign-in/sign-up UI using server-issued HttpOnly cookies
 - Personalized career matching with explainable fit signals
-- Opportunity search, filters and saved jobs
-- Application tracking
-- Career insights and roadmap generation
-- Salary intelligence from available job-market rows
-- CV text intelligence for TXT/Markdown input
+- Job discovery, filters, saved roles, and application tracking
+- Career insights, roadmap generation, and salary intelligence from available job-market rows
+- CV text intelligence for TXT/Markdown input (PDF/DOCX extraction is not implemented)
 - Interview practice and deterministic answer evaluation
-- Job safety/fraud signal analysis
-- Location-fit assessment without inventing commute times
-- Employer verification submissions with explicit pending review status
-- Production-oriented job ingestion boundary that refuses to seed fabricated vacancies
-- Security checklist and automated CI for typecheck, production build and server syntax
+- Job safety/fraud signal analysis and location-fit assessment without inventing commute times
+- Employer verification submissions that remain pending until a reviewed operator/admin workflow exists
+- Indonesia location filters covering 38 provinces and 514 kabupaten/kota
+- Official-source job discovery for Pasker ID and government announcements from BKN RI and Kementerian Kesehatan
+- Validated partner-feed import endpoint with transactional updates and stale-job expiry
+- Scheduled sync runner code (`npm run sync:jobs`) for a trusted cron service
 
 ## Development
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
@@ -31,33 +30,41 @@ API:
 npm run dev:api
 ```
 
-Production build:
+Production build and full verification:
 
 ```bash
 npm run build
+npm run check
+npm audit --omit=dev --audit-level=high
 npm start
 ```
 
-## Required real-world configuration before public launch
+## Validation status
 
-- `DATABASE_URL` for PostgreSQL
-- `FRONTEND_ORIGIN` set to the actual frontend origin
-- `NOVA_JOB_FEED_URL` pointing to an authorized real job feed
-- Production HTTPS/domain configuration
-- A verified email provider for email verification/password recovery
+The NOVA preflight branch's last confirmed verification run passed:
+
+- TypeScript typecheck and production build
+- 20 automated tests, including server smoke/security checks, official-source parser tests, regional dataset validation, and scheduled-sync runner tests
+- Server syntax check
+- Production dependency audit: 0 vulnerabilities at the last check
+
+GitHub Actions run: https://github.com/kitasupport21-hash/KITA/actions/runs/39224315834
+
+## Required configuration and work before public launch
+
+- `DATABASE_URL` for the target PostgreSQL database, with migrations/schema creation verified on that exact instance
+- `FRONTEND_ORIGIN` set to the actual public frontend origin
+- A verified email provider and complete email-verification/password-recovery flow (not yet implemented end-to-end)
+- An authorized real job-feed URL and credentials before automatic job imports can run
+- `NOVA_SYNC_SECRET` set privately on the API and the scheduled runner
+- A separate scheduled runner configured and tested; its code exists but the service has not been created
+- Production HTTPS/domain, CORS, cookies, backups, monitoring, and rollback procedure verified
 - A reviewed operator/admin workflow before employer verification can be approved
+- Automated PostgreSQL-backed end-to-end workflow tests in CI; the target production database still needs a final environment-specific smoke test
+- Manual QA of signup/login, job discovery, saved jobs, applications, notifications, and employer submission on the actual target deployment
 
-NOVA deliberately does not ship fabricated job listings or automatically mark employers as verified.
+NOVA deliberately does not ship fabricated job listings or automatically mark employers as verified. Public-source discovery and imported database listings are presented separately. Government announcements are a monitored subset, not a complete feed for every Indonesian ministry and local government.
 
-## Validation
+## Release policy
 
-GitHub Actions runs:
-
-```bash
-npm install
-npm run typecheck
-npm run build
-node --check server/index.mjs
-```
-
-Deployment is intentionally not performed as part of development work.
+The preflight changes are kept on the draft pull request until launch blockers are resolved. The current Render services point at other branches, so the preflight changes have not been deployed to them. Do not merge or deploy without the owner's explicit approval and a verified rollback plan.
