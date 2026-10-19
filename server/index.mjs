@@ -31,9 +31,74 @@ create table if not exists employer_profiles (
  verification_notes text, verified_at timestamptz, created_at timestamptz not null default now(), updated_at timestamptz not null default now()
 );
 create table if not exists employer_verification_events (
- id uuid 
-…[1 chars truncated — re-run with head/grep/tail for full output]…
-Path.startsWith('/assets/'))return send(res,404,{error:'not_found'});
+ id uuid primary key default gen_random_uuid(), employer_id uuid not null references employer_profiles(id) on delete cascade,
+ actor_profile_id uuid references profiles(id) on delete set null, status text not null, notes text, created_at timestamptz not null default now()
+);
+create table if not exists jobs (
+ id uuid primary key default gen_random_uuid(), external_id text, title text not null, company text not null, province text, city text, salary_min_jt numeric, salary_max_jt numeric, work_mode text, level text, tags text[] not null default '{}', description text, source_name text not null, source_url text, apply_url text, verified boolean not null default false, status text not null default 'active', posted_at timestamptz, expires_at timestamptz, employer_id uuid references employer_profiles(id) on delete set null, created_at timestamptz not null default now(), updated_at timestamptz not null default now(), unique(source_name, external_id)
+);
+create table if not exists saved_jobs (profile_id uuid references profiles(id) on delete cascade, job_id uuid references jobs(id) on delete cascade, created_at timestamptz not null default now(), primary key(profile_id, job_id));
+create table if not exists applications (id uuid primary key default gen_random_uuid(), profile_id uuid references profiles(id) on delete cascade, job_id uuid references jobs(id) on delete cascade, status text not null default 'saved', applied_at timestamptz, notes text, created_at timestamptz not null default now(), updated_at timestamptz not null default now(), unique(profile_id, job_id));
+create table if not exists sessions (
+ token_hash text primary key, profile_id uuid not null references profiles(id) on delete cascade,
+ created_at timestamptz not null default now(), expires_at timestamptz not null, last_seen_at timestamptz not null default now()
+);
+create table if not exists notifications (
+ id uuid primary key default gen_random_uuid(), profile_id uuid not null references profiles(id) on delete cascade,
+ type text not null default 'system', title text not null, body text not null, href text,
+ read_at timestamptz, created_at timestamptz not null default now()
+);
+create index if not exists notifications_profile_created_idx on notifications(profile_id, created_at desc);
+create table if not exists application_status_events (
+ id uuid primary key default gen_random_uuid(), application_id uuid not null references applications(id) on delete cascade,
+ old_status text, new_status text not null, note text, created_at timestamptz not null default now()
+);
+create index if not exists jobs_location_idx on jobs(province, city);
+alter table jobs add column if not exists expires_at timestamptz;
+create index if not exists jobs_status_posted_idx on jobs(status, posted_at desc);
+create index if not exists jobs_expiry_idx on jobs(expires_at);
+create index if not exists sessions_expiry_idx on sessions(expires_at);
+create index if not exists employer_owner_idx on employer_profiles(owner_profile_id);
+create index if not exists employer_status_idx on employer_profiles(verification_status);
+create index if not exists jobs_employer_idx on jobs(employer_id);
+`;
+const send=(res,status,data,headers={})=>{res.writeHead(status,{'content-type':'application/json; charset=utf-8','access-control-allow-origin':process.env.FRONTEND_ORIGIN||'http://localhost:5173','access-control-allow-credentials':'true','access-control-allow-headers':'content-type, authorization','access-control-allow-methods':'GET,POST,PATCH,DELETE,OPTIONS','vary':'Origin','cache-control':'no-store',...headers});res.end(JSON.stringify(data));};
+const body=req=>new Promise((resolve,reject)=>{let raw='';req.on('data',c=>{raw+=c;if(raw.length>1000000){reject(new Error('payload_too_large'));req.destroy()}});req.on('end',()=>{try{resolve(raw?JSON.parse(raw):{})}catch{reject(new Error('invalid_json'))}});req.on('error',reject)});
+const requireDb=()=>{if(!pool)throw new Error('DATABASE_URL is not configured');return pool};
+const normalizeArray=v=>Array.isArray(v)?v.map(x=>String(x).trim()).filter(Boolean).slice(0,100):null;
+const validStringArray=v=>v==null||normalizeArray(v)!==null;
+const verifyPassword=(password,stored)=>{const [salt,hash]=String(stored||'').split(':');if(!salt||!hash)return false;try{const derived=crypto.scryptSync(password,Buffer.from(salt,'hex'),64).toString('hex');return crypto.timingSafeEqual(Buffer.from(hash,'hex'),Buffer.from(derived,'hex'))}catch{return false}};
+const makePasswordHash=password=>{const salt=crypto.randomBytes(16);const hash=crypto.scryptSync(password,salt,64);return `${salt.toString('hex')}:${hash.toString('hex')}`};
+const hashToken=token=>crypto.createHash('sha256').update(token).digest('hex');
+const sessionCookie=(token,maxAge=SESSION_TTL_MS/1000)=>`nova_session=${token}; Path=/; HttpOnly; SameSite=${process.env.NODE_ENV==='production'?'None':'Lax'}; Max-Age=${maxAge}${process.env.NODE_ENV==='production'?'; Secure':''}`;
+const clearSessionCookie=()=>`nova_session=; Path=/; HttpOnly; SameSite=${process.env.NODE_ENV==='production'?'None':'Lax'}; Max-Age=0${process.env.NODE_ENV==='production'?'; Secure':''}`;
+const readSessionToken=req=>{const auth=req.headers.authorization||'';if(auth.startsWith('Bearer '))return auth.slice(7);const cookie=String(req.headers.cookie||'').split(';').map(x=>x.trim()).find(x=>x.startsWith('nova_session='));return cookie?decodeURIComponent(cookie.slice('nova_session='.length)):''};
+const issueSession=async(db,profileId)=>{const token=crypto.randomBytes(32).toString('hex');await db.query('insert into sessions(token_hash,profile_id,expires_at) values($1,$2,$3)',[hashToken(token),profileId,new Date(Date.now()+SESSION_TTL_MS)]);return token};
+const getSession=async(req,db)=>{const token=readSessionToken(req);if(token.length!==64)return null;const r=await db.query('select token_hash,profile_id from sessions where token_hash=$1 and expires_at>now()',[hashToken(token)]);if(!r.rowCount)return null;await db.query('update sessions set last_seen_at=now() where token_hash=$1',[hashToken(token)]);return {token,profileId:r.rows[0].profile_id}};
+const cleanProfile=row=>({id:row.id,email:row.email,name:row.name,emailVerified:row.email_verified,skills:row.skills||[],preferredModes:row.preferred_modes||[],preferredProvinces:row.preferred_provinces||[],targetLevels:row.target_levels||[],minimumSalaryJt:Number(row.minimum_salary_jt||0)});
+const rateKey=req=>`${req.socket.remoteAddress||'unknown'}:${req.url?.split('?')[0]||'/'}`;
+const rateLimited=req=>{const now=Date.now();const key=rateKey(req);const bucket=rateBuckets.get(key);if(!bucket||now-bucket.startedAt>RATE_WINDOW_MS){rateBuckets.set(key,{startedAt:now,count:1});return false}bucket.count++;return bucket.count>RATE_LIMIT};
+setInterval(async()=>{const now=Date.now();for(const [key,b] of rateBuckets)if(now-b.startedAt>RATE_WINDOW_MS)rateBuckets.delete(key);if(pool)try{await pool.query('delete from sessions where expires_at < $1',[new Date(now)])}catch(error){console.error('session cleanup failed',error.message)}},60_000).unref();
+
+async function start(){if(pool)await pool.query(schema);server.listen(port,'0.0.0.0',()=>console.log(`NOVA API listening on ${port}`))}
+const server=http.createServer(async(req,res)=>{
+ if(req.method==='OPTIONS')return send(res,204,{});
+ if(['POST','PUT','PATCH','DELETE'].includes(req.method)){
+  const origin=req.headers.origin;const allowedOrigin=process.env.FRONTEND_ORIGIN||'http://localhost:5173';
+  const hasSessionCookie=String(req.headers.cookie||'').split(';').some(part=>part.trim().startsWith('nova_session='));
+  if((origin&&origin!==allowedOrigin)||(hasSessionCookie&&!origin))return send(res,403,{error:'origin_not_allowed'});
+ }
+ if(rateLimited(req))return send(res,429,{error:'rate_limited',retryAfterSeconds:Math.ceil(RATE_WINDOW_MS/1000)});
+ try{
+  const url=new URL(req.url||'/',`http://${req.headers.host||'localhost'}`);
+  if(req.method==='GET'&&!url.pathname.startsWith('/api/')){
+   let requestedPath;
+   try{requestedPath=decodeURIComponent(url.pathname)}catch{return send(res,400,{error:'invalid_path'})}
+   let filePath=path.resolve(staticDir,'.'+requestedPath);
+   if(filePath!==staticDir&&!filePath.startsWith(staticDir+path.sep))return send(res,403,{error:'forbidden'});
+   let data;
+   try{data=await readFile(filePath)}catch{
+    if(path.extname(filePath)||requestedPath.startsWith('/assets/'))return send(res,404,{error:'not_found'});
     filePath=path.join(staticDir,'index.html');
     try{data=await readFile(filePath)}catch{return send(res,503,{error:'frontend_build_missing'})}
    }
