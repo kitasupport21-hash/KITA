@@ -1,10 +1,13 @@
-import data from '../data/indonesia-regions.json' with { type: 'json' };
+import provinceData from '../data/indonesia-provinces.json' with { type: 'json' };
+import regencyData1 from '../data/indonesia-regencies-1.json' with { type: 'json' };
+import regencyData2 from '../data/indonesia-regencies-2.json' with { type: 'json' };
+import regencyData3 from '../data/indonesia-regencies-3.json' with { type: 'json' };
 
 export type IndonesianProvince = { id: string; name: string };
 export type IndonesianRegency = { id: string; provinceId: string; name: string };
 
-export const INDONESIAN_PROVINCES = data.provinces as IndonesianProvince[];
-export const INDONESIAN_REGENCIES = data.regencies as IndonesianRegency[];
+export const INDONESIAN_PROVINCES = provinceData as IndonesianProvince[];
+export const INDONESIAN_REGENCIES = [...regencyData1, ...regencyData2, ...regencyData3] as IndonesianRegency[];
 
 export function displayProvinceName(name: string): string {
   if (name === 'Daerah Khusus Ibukota Jakarta') return 'DKI Jakarta';
@@ -33,8 +36,6 @@ export function regencyMatchesCity(regencyName: string, cityName: string): boole
   if (regency === city) return true;
   const hasType = (value: string) => /^(kabupaten|kota)\s/.test(value);
   const bareName = (value: string) => value.replace(/^(kabupaten|kota)\s+/, '');
-  // Some feeds store only the city name, while others include its official type.
-  // If both include a type, keep Kota and Kabupaten distinct.
   if (hasType(regency) && !hasType(city)) return bareName(regency) === city;
   if (!hasType(regency) && hasType(city)) return regency === bareName(city);
   return false;
