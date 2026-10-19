@@ -28,3 +28,18 @@
 .source-attribution{margin:14px 0 0;font-size:10px;line-height:1.5;color:var(--muted,#64748b)}
 .source-attribution a{color:inherit;text-decoration:underline}
 @media(max-width:700px){.source-filters{grid-template-columns:1fr}.source-heading h3{font-size:16px}}
+.official-jobs-panel{margin:18px 0;padding:16px;border:1px solid var(--line,#dbe4ee);border-radius:16px;background:var(--soft,#f8fafc)}
+.source-live-link{text-decoration:none;color:inherit;white-space:nowrap}
+.official-feed-status{margin:12px 0 0;padding:12px;border:1px dashed var(--line,#cbd5e1);border-radius:12px;font-size:12px;line-height:1.6;color:var(--muted,#64748b)}
+.official-feed-status a,.official-feed-updated a{color:var(--accent,#4f46e5);font-weight:700}
+.official-job-list{display:grid;gap:9px;margin-top:12px}
+.official-job-card{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:13px;border:1px solid var(--line,#dbe4ee);border-radius:12px;background:var(--panel,#fff)}
+.official-job-card strong,.official-job-card span,.official-job-card small{display:block}
+.official-job-card strong{font-size:13px}
+.official-job-card span{font-size:12px;margin-top:4px}
+.official-job-card small{font-size:10px;margin-top:5px;color:var(--muted,#64748b)}
+.official-job-actions{display:flex;gap:7px;flex:none}
+.official-job-actions a{font-size:11px;font-weight:750;padding:8px 10px;border-radius:9px;background:var(--soft,#f1f5f9);color:inherit;text-decoration:none}
+.official-job-actions a:last-child{background:var(--accent,#4f46e5);color:#fff}
+.official-feed-updated{margin:10px 0 0;font-size:10px;color:var(--muted,#64748b)}
+@media(max-width:560px){.official-job-card{align-items:flex-start;flex-direction:column}.official-job-actions{width:100%}.official-job-actions a{flex:1;text-align:center}}
