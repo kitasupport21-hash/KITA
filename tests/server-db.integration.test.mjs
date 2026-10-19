@@ -5,6 +5,10 @@ import { Pool } from 'pg';
 
 const databaseUrl = process.env.DATABASE_URL;
 
+async function expectStatus(response, expected) {
+  if (response.status !== expected) throw new Error(`Expected HTTP ${expected}, got ${response.status}: ${await response.text()}`);
+}
+
 test('PostgreSQL-backed signup, profile, jobs, saved roles, applications, notifications, and logout work end-to-end', { skip: !databaseUrl }, async () => {
   const pool = new Pool({ connectionString: databaseUrl });
   let server;
@@ -35,7 +39,7 @@ test('PostgreSQL-backed signup, profile, jobs, saved roles, applications, notifi
     const jsonHeaders = { ...origin, 'content-type': 'application/json' };
     let cookie = '';
     const signup = await fetch(`${baseUrl}/api/auth/signup`, { method: 'POST', headers: jsonHeaders, body: JSON.stringify({ name: 'NOVA Integration', email, password: 'correct-horse-battery-staple' }) });
-    assert.equal(signup.status, 201, await signup.text());
+    await expectStatus(signup, 201);
     const signupPayload = await signup.json();
     assert.equal(signupPayload.profile.email, email);
     cookie = String(signup.headers.get('set-cookie') || '').split(';')[0];
@@ -47,7 +51,7 @@ test('PostgreSQL-backed signup, profile, jobs, saved roles, applications, notifi
     assert.equal((await me.json()).profile.email, email);
 
     const profileUpdate = await fetch(`${baseUrl}/api/profile`, { method: 'PATCH', headers: authHeaders, body: JSON.stringify({ skills: ['React', 'SQL'], preferredModes: ['Remote'], preferredProvinces: ['DKI Jakarta'], targetLevels: ['Junior'], minimumSalaryJt: 8 }) });
-    assert.equal(profileUpdate.status, 200, await profileUpdate.text());
+    await expectStatus(profileUpdate, 200);
     assert.deepEqual((await profileUpdate.json()).profile.skills, ['React', 'SQL']);
 
     const inserted = await pool.query(`insert into jobs(external_id,title,company,province,city,source_name,source_url,apply_url,status,posted_at) values($1,$2,$3,$4,$5,$6,$7,$8,'active',now()) returning id`, [email, 'Integration Warehouse Operator', 'PT NOVA Test', 'DKI Jakarta', 'Jakarta Selatan', 'nova-integration-test', 'https://jobs.example.test/roles/integration', 'https://jobs.example.test/apply/integration']);
@@ -57,12 +61,12 @@ test('PostgreSQL-backed signup, profile, jobs, saved roles, applications, notifi
     assert.ok((await jobs.json()).jobs.some(job => job.id === jobId));
 
     const save = await fetch(`${baseUrl}/api/saved`, { method: 'POST', headers: authHeaders, body: JSON.stringify({ jobId }) });
-    assert.equal(save.status, 201, await save.text());
+    await expectStatus(save, 201);
     const saved = await fetch(`${baseUrl}/api/saved`, { headers: { cookie } });
     assert.ok((await saved.json()).jobs.some(job => job.id === jobId));
 
     const application = await fetch(`${baseUrl}/api/applications`, { method: 'POST', headers: authHeaders, body: JSON.stringify({ jobId, status: 'applied', notes: 'Integration test' }) });
-    assert.equal(application.status, 201, await application.text());
+    await expectStatus(application, 201);
     const applications = await fetch(`${baseUrl}/api/applications`, { headers: { cookie } });
     assert.ok((await applications.json()).applications.some(item => item.job_id === jobId));
 
@@ -76,7 +80,7 @@ test('PostgreSQL-backed signup, profile, jobs, saved roles, applications, notifi
     assert.equal(afterLogout.status, 401);
 
     const login = await fetch(`${baseUrl}/api/auth/login`, { method: 'POST', headers: jsonHeaders, body: JSON.stringify({ email, password: 'correct-horse-battery-staple' }) });
-    assert.equal(login.status, 200, await login.text());
+    await expectStatus(login, 200);
     assert.equal((await login.json()).profile.email, email);
   } finally {
     await pool.query('delete from profiles where email=$1', [email]).catch(() => {});
