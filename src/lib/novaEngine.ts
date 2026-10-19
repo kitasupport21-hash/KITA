@@ -64,7 +64,7 @@ export function detectRiskSignals(text: string) {
     ['upfront payment', /(pay|payment|transfer|deposit).{0,35}(fee|money|rp|charge)/i],
     ['guaranteed income', /(guaranteed|jamin).{0,20}(salary|income|gaji)/i],
     ['personal account transfer', /(rekening|account).{0,25}(pribadi|personal)/i],
-    ['unusual identity request', /(otp|one[- ]time password|pin).{0,30}(send|share|kirim)/i],
+    ['unusual identity request', /((otp|one[- ]time password|pin).{0,30}(send|share|kirim))|((send|share|kirim).{0,30}(otp|one[- ]time password|pin))/i],
   ] as const;
   return patterns.filter(([, pattern]) => pattern.test(value)).map(([signal]) => signal);
 }
