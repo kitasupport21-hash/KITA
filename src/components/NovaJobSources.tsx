@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import regions from '../data/indonesia-regions.json';
+import { displayProvinceName } from '../lib/indonesiaRegions';
 
 type Props = { keyword?: string; province?: string };
 type Province = { id: string; name: string };
@@ -34,7 +35,7 @@ function buildSources(keyword: string, location: string) {
 }
 
 export default function NovaJobSources({ keyword = '', province = 'All Indonesia' }: Props) {
-  const [selectedProvince, setSelectedProvince] = useState(() => PROVINCES.find((item) => item.name.toLowerCase() === province.toLowerCase())?.id || '');
+  const [selectedProvince, setSelectedProvince] = useState(() => PROVINCES.find((item) => displayProvinceName(item.name).toLowerCase() === province.toLowerCase())?.id || '');
   const [selectedRegency, setSelectedRegency] = useState('');
   const [selectedRole, setSelectedRole] = useState('');
   const [customKeyword, setCustomKeyword] = useState(keyword);
@@ -52,7 +53,7 @@ export default function NovaJobSources({ keyword = '', province = 'All Indonesia
     <p className="source-note">Pilih provinsi dan kabupaten/kota agar setiap pencarian lebih relevan. NOVA membuka hasil pencarian terbaru dari portal kerja; lowongan eksternal belum dianggap sebagai listing terverifikasi di database NOVA. Periksa tanggal, perusahaan, lokasi, dan tautan lamaran sebelum melamar.</p>
 
     <div className="source-filters">
-      <label>Provinsi<select value={selectedProvince} onChange={(event) => { setSelectedProvince(event.target.value); setSelectedRegency(''); }}><option value="">Seluruh Indonesia</option>{PROVINCES.slice().sort((a,b)=>a.name.localeCompare(b.name,'id')).map((item)=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+      <label>Provinsi<select value={selectedProvince} onChange={(event) => { setSelectedProvince(event.target.value); setSelectedRegency(''); }}><option value="">Seluruh Indonesia</option>{PROVINCES.slice().sort((a,b)=>a.name.localeCompare(b.name,'id')).map((item)=><option key={item.id} value={item.id}>{displayProvinceName(item.name)}</option>)}</select></label>
       <label>Kabupaten / Kota<select value={selectedRegency} onChange={(event) => setSelectedRegency(event.target.value)}><option value="">Semua kabupaten/kota</option>{availableRegencies.map((item)=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
       <label>Posisi atau keterampilan<input value={customKeyword} onChange={(event) => { setCustomKeyword(event.target.value); setSelectedRole(''); }} placeholder="Contoh: kasir, operator, data analyst" /></label>
     </div>
