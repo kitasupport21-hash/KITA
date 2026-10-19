@@ -10,6 +10,7 @@ export type ApiEmployer={id:string;legalName:string;displayName:string;website?:
 export type ApiNotification={id:string;type:string;title:string;body:string;href?:string|null;read_at?:string|null;created_at:string};
 const API_BASE=(import.meta.env.VITE_API_BASE_URL||'').replace(/\/$/,'');
 // Authentication is persisted only in the server-issued HttpOnly cookie.
+if(typeof window!=='undefined'){try{localStorage.removeItem('nova.auth.token');localStorage.removeItem('kita_token')}catch{/* storage may be disabled */}}
 export const getAuthToken=()=>null;
 export const clearAuthToken=()=>{};
 async function request<T>(path:string,options:RequestInit={}):Promise<T>{
