@@ -37,6 +37,16 @@ create table if not exists sessions (
  token_hash text primary key, profile_id uuid not null references profiles(id) on delete cascade,
  created_at timestamptz not null default now(), expires_at timestamptz not null, last_seen_at timestamptz not null default now()
 );
+create table if not exists notifications (
+ id uuid primary key default gen_random_uuid(), profile_id uuid not null references profiles(id) on delete cascade,
+ type text not null default 'system', title text not null, body text not null, href text,
+ read_at timestamptz, created_at timestamptz not null default now()
+);
+create index if not exists notifications_profile_created_idx on notifications(profile_id, created_at desc);
+create table if not exists application_status_events (
+ id uuid primary key default gen_random_uuid(), application_id uuid not null references applications(id) on delete cascade,
+ old_status text, new_status text not null, note text, created_at timestamptz not null default now()
+);
 create index if not exists jobs_location_idx on jobs(province, city);
 create index if not exists jobs_status_posted_idx on jobs(status, posted_at desc);
 create index if not exists sessions_expiry_idx on sessions(expires_at);
@@ -44,7 +54,7 @@ create index if not exists employer_owner_idx on employer_profiles(owner_profile
 create index if not exists employer_status_idx on employer_profiles(verification_status);
 create index if not exists jobs_employer_idx on jobs(employer_id);
 `;
-const send=(res,status,data,headers={})=>{res.writeHead(status,{'content-type':'application/json; charset=utf-8','access-control-allow-origin':process.env.FRONTEND_ORIGIN||'*','access-control-allow-headers':'content-type, authorization','access-control-allow-methods':'GET,POST,PATCH,DELETE,OPTIONS','cache-control':'no-store',...headers});res.end(JSON.stringify(data));};
+const send=(res,status,data,headers={})=>{res.writeHead(status,{'content-type':'application/json; charset=utf-8','access-control-allow-origin':process.env.FRONTEND_ORIGIN||'http://localhost:5173','access-control-allow-credentials':'true','access-control-allow-headers':'content-type, authorization','access-control-allow-methods':'GET,POST,PATCH,DELETE,OPTIONS','vary':'Origin','cache-control':'no-store',...headers});res.end(JSON.stringify(data));};
 const body=req=>new Promise((resolve,reject)=>{let raw='';req.on('data',c=>{raw+=c;if(raw.length>1000000){reject(new Error('payload_too_large'));req.destroy()}});req.on('end',()=>{try{resolve(raw?JSON.parse(raw):{})}catch{reject(new Error('invalid_json'))}});req.on('error',reject)});
 const requireDb=()=>{if(!pool)throw new Error('DATABASE_URL is not configured');return pool};
 const normalizeArray=v=>Array.isArray(v)?v.map(x=>String(x).trim()).filter(Boolean).slice(0,100):null;
@@ -52,8 +62,11 @@ const validStringArray=v=>v==null||normalizeArray(v)!==null;
 const verifyPassword=(password,stored)=>{const [salt,hash]=String(stored||'').split(':');if(!salt||!hash)return false;try{const derived=crypto.scryptSync(password,Buffer.from(salt,'hex'),64).toString('hex');return crypto.timingSafeEqual(Buffer.from(hash,'hex'),Buffer.from(derived,'hex'))}catch{return false}};
 const makePasswordHash=password=>{const salt=crypto.randomBytes(16);const hash=crypto.scryptSync(password,salt,64);return `${salt.toString('hex')}:${hash.toString('hex')}`};
 const hashToken=token=>crypto.createHash('sha256').update(token).digest('hex');
+const sessionCookie=(token,maxAge=SESSION_TTL_MS/1000)=>`nova_session=${token}; Path=/; HttpOnly; SameSite=${process.env.NODE_ENV==='production'?'None':'Lax'}; Max-Age=${maxAge}${process.env.NODE_ENV==='production'?'; Secure':''}`;
+const clearSessionCookie=()=>`nova_session=; Path=/; HttpOnly; SameSite=${process.env.NODE_ENV==='production'?'None':'Lax'}; Max-Age=0${process.env.NODE_ENV==='production'?'; Secure':''}`;
+const readSessionToken=req=>{const auth=req.headers.authorization||'';if(auth.startsWith('Bearer '))return auth.slice(7);const cookie=String(req.headers.cookie||'').split(';').map(x=>x.trim()).find(x=>x.startsWith('nova_session='));return cookie?decodeURIComponent(cookie.slice('nova_session='.length)):''};
 const issueSession=async(db,profileId)=>{const token=crypto.randomBytes(32).toString('hex');await db.query('insert into sessions(token_hash,profile_id,expires_at) values($1,$2,$3)',[hashToken(token),profileId,new Date(Date.now()+SESSION_TTL_MS)]);return token};
-const getSession=async(req,db)=>{const auth=req.headers.authorization||'';if(!auth.startsWith('Bearer '))return null;const token=auth.slice(7);if(token.length!==64)return null;const r=await db.query('select token_hash,profile_id from sessions where token_hash=$1 and expires_at>now()',[hashToken(token)]);if(!r.rowCount)return null;await db.query('update sessions set last_seen_at=now() where token_hash=$1',[hashToken(token)]);return {token,profileId:r.rows[0].profile_id}};
+const getSession=async(req,db)=>{const token=readSessionToken(req);if(token.length!==64)return null;const r=await db.query('select token_hash,profile_id from sessions where token_hash=$1 and expires_at>now()',[hashToken(token)]);if(!r.rowCount)return null;await db.query('update sessions set last_seen_at=now() where token_hash=$1',[hashToken(token)]);return {token,profileId:r.rows[0].profile_id}};
 const cleanProfile=row=>({id:row.id,email:row.email,name:row.name,emailVerified:row.email_verified,skills:row.skills||[],preferredModes:row.preferred_modes||[],preferredProvinces:row.preferred_provinces||[],targetLevels:row.target_levels||[],minimumSalaryJt:Number(row.minimum_salary_jt||0)});
 const rateKey=req=>`${req.socket.remoteAddress||'unknown'}:${req.url?.split('?')[0]||'/'}`;
 const rateLimited=req=>{const now=Date.now();const key=rateKey(req);const bucket=rateBuckets.get(key);if(!bucket||now-bucket.startedAt>RATE_WINDOW_MS){rateBuckets.set(key,{startedAt:now,count:1});return false}bucket.count++;return bucket.count>RATE_LIMIT};
@@ -71,17 +84,17 @@ const server=http.createServer(async(req,res)=>{
    if(!/^\S+@\S+\.\S+$/.test(email))return send(res,400,{error:'invalid_email'});if(password.length<8||password.length>200)return send(res,400,{error:'invalid_password'});if(name.length>120)return send(res,400,{error:'invalid_name'});
    const exists=await db.query('select id from profiles where email=$1',[email]);if(exists.rowCount)return send(res,409,{error:'email_already_registered'});
    const r=await db.query('insert into profiles(email,name,password_hash) values($1,$2,$3) returning *',[email,name||null,makePasswordHash(password)]);const token=await issueSession(db,r.rows[0].id);
-   return send(res,201,{token,profile:cleanProfile(r.rows[0])});
+   return send(res,201,{profile:cleanProfile(r.rows[0])},{'set-cookie':sessionCookie(token)});
   }
   if(url.pathname==='/api/auth/login'&&req.method==='POST'){
    const d=await body(req);const email=String(d.email||'').trim().toLowerCase();const password=String(d.password||'');const r=await db.query('select * from profiles where email=$1',[email]);
    if(!r.rowCount||!r.rows[0].password_hash||!verifyPassword(password,r.rows[0].password_hash))return send(res,401,{error:'invalid_credentials'});
-   const token=await issueSession(db,r.rows[0].id);return send(res,200,{token,profile:cleanProfile(r.rows[0])});
+   const token=await issueSession(db,r.rows[0].id);return send(res,200,{profile:cleanProfile(r.rows[0])},{'set-cookie':sessionCookie(token)});
   }
   if(url.pathname==='/api/auth/me'&&req.method==='GET'){
    const session=await getSession(req,db);if(!session)return send(res,401,{error:'unauthorized'});const r=await db.query('select * from profiles where id=$1',[session.profileId]);if(!r.rowCount)return send(res,401,{error:'unauthorized'});return send(res,200,{profile:cleanProfile(r.rows[0])});
   }
-  if(url.pathname==='/api/auth/logout'&&req.method==='POST'){const session=await getSession(req,db);if(session)await db.query('delete from sessions where token_hash=$1',[hashToken(session.token)]);return send(res,200,{ok:true})}
+  if(url.pathname==='/api/auth/logout'&&req.method==='POST'){const session=await getSession(req,db);if(session)await db.query('delete from sessions where token_hash=$1',[hashToken(session.token)]);return send(res,200,{ok:true},{'set-cookie':clearSessionCookie()})}
 
   const session=await getSession(req,db);
   if(url.pathname==='/api/profile'&&req.method==='PATCH'){
@@ -122,7 +135,24 @@ const server=http.createServer(async(req,res)=>{
   if(url.pathname==='/api/applications'){
    if(!session)return send(res,401,{error:'unauthorized'});
    if(req.method==='GET'){const r=await db.query('select a.*,j.title,j.company,j.city,j.province,j.level,j.work_mode,j.apply_url from applications a join jobs j on j.id=a.job_id where a.profile_id=$1 order by a.updated_at desc',[session.profileId]);return send(res,200,{applications:r.rows})}
-   if(req.method==='POST'){const d=await body(req);if(typeof d.jobId!=='string')return send(res,400,{error:'jobId_required'});const exists=await db.query("select 1 from jobs where id=$1 and status='active'",[d.jobId]);if(!exists.rowCount)return send(res,404,{error:'job_not_found'});const status=['saved','applied','screening','interview','offer','rejected','withdrawn'].includes(d.status)?d.status:'applied';const notes=d.notes==null?null:String(d.notes).slice(0,5000);const r=await db.query(`insert into applications(profile_id,job_id,status,applied_at,notes) values($1,$2,$3,$4,$5) on conflict(profile_id,job_id) do update set status=excluded.status,applied_at=excluded.applied_at,notes=excluded.notes,updated_at=now() returning *`,[session.profileId,d.jobId,status,d.appliedAt||new Date().toISOString(),notes]);return send(res,201,{application:r.rows[0]})}
+   if(req.method==='POST'){const d=await body(req);if(typeof d.jobId!=='string')return send(res,400,{error:'jobId_required'});const exists=await db.query("select 1 from jobs where id=$1 and status='active'",[d.jobId]);if(!exists.rowCount)return send(res,404,{error:'job_not_found'});const status=['saved','applied','screening','interview','offer','rejected','withdrawn'].includes(d.status)?d.status:'applied';const notes=d.notes==null?null:String(d.notes).slice(0,5000);const r=await db.query(`insert into applications(profile_id,job_id,status,applied_at,notes) values($1,$2,$3,$4,$5) on conflict(profile_id,job_id) do update set status=excluded.status,applied_at=excluded.applied_at,notes=excluded.notes,updated_at=now() returning *`,[session.profileId,d.jobId,status,d.appliedAt||new Date().toISOString(),notes]);const application=r.rows[0];await db.query('insert into application_status_events(application_id,new_status,note) values($1,$2,$3)',[application.id,status,notes]);const job=await db.query('select title from jobs where id=$1',[d.jobId]);await db.query('insert into notifications(profile_id,type,title,body,href) values($1,$2,$3,$4,$5)',[session.profileId,'application','Application updated',`Your application for ${job.rows[0]?.title||'a job'} is now ${status}.`,'/applications']);return send(res,201,{application})}
+  }
+  if(url.pathname==='/api/notifications'&&req.method==='GET'){
+   if(!session)return send(res,401,{error:'unauthorized'});
+   const r=await db.query('select id,type,title,body,href,read_at,created_at from notifications where profile_id=$1 order by created_at desc limit 100',[session.profileId]);
+   return send(res,200,{notifications:r.rows,unreadCount:r.rows.filter(n=>!n.read_at).length});
+  }
+  if(url.pathname==='/api/notifications/mark-all-read'&&req.method==='PATCH'){
+   if(!session)return send(res,401,{error:'unauthorized'});
+   await db.query('update notifications set read_at=now() where profile_id=$1 and read_at is null',[session.profileId]);
+   return send(res,200,{ok:true});
+  }
+  const notificationMatch=url.pathname.match(/^\\/api\\/notifications\\/([0-9a-f-]+)\\/read$/i);
+  if(notificationMatch&&req.method==='PATCH'){
+   if(!session)return send(res,401,{error:'unauthorized'});
+   const r=await db.query('update notifications set read_at=coalesce(read_at,now()) where id=$1 and profile_id=$2 returning id',[notificationMatch[1],session.profileId]);
+   if(!r.rowCount)return send(res,404,{error:'notification_not_found'});
+   return send(res,200,{ok:true});
   }
   return send(res,404,{error:'not_found'});
  }catch(error){console.error(error);const status=error.message==='DATABASE_URL is not configured'?503:error.message==='invalid_json'?400:error.message==='payload_too_large'?413:500;return send(res,status,{error:status===500?'internal_server_error':error.message})}
