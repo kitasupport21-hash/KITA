@@ -18,8 +18,18 @@ create table if not exists profiles (
  skills text[] not null default '{}', preferred_modes text[] not null default '{}', preferred_provinces text[] not null default '{}', target_levels text[] not null default '{}', minimum_salary_jt numeric not null default 0,
  created_at timestamptz not null default now(), updated_at timestamptz not null default now()
 );
+create table if not exists employer_profiles (
+ id uuid primary key default gen_random_uuid(), owner_profile_id uuid not null references profiles(id) on delete cascade,
+ legal_name text not null, display_name text not null, website text, business_email text, business_registration text,
+ verification_status text not null default 'pending' check (verification_status in ('pending','verified','rejected')),
+ verification_notes text, verified_at timestamptz, created_at timestamptz not null default now(), updated_at timestamptz not null default now()
+);
+create table if not exists employer_verification_events (
+ id uuid primary key default gen_random_uuid(), employer_id uuid not null references employer_profiles(id) on delete cascade,
+ actor_profile_id uuid references profiles(id) on delete set null, status text not null, notes text, created_at timestamptz not null default now()
+);
 create table if not exists jobs (
- id uuid primary key default gen_random_uuid(), external_id text, title text not null, company text not null, province text, city text, salary_min_jt numeric, salary_max_jt numeric, work_mode text, level text, tags text[] not null default '{}', description text, source_name text not null, source_url text, apply_url text, verified boolean not null default false, status text not null default 'active', posted_at timestamptz, created_at timestamptz not null default now(), updated_at timestamptz not null default now(), unique(source_name, external_id)
+ id uuid primary key default gen_random_uuid(), external_id text, title text not null, company text not null, province text, city text, salary_min_jt numeric, salary_max_jt numeric, work_mode text, level text, tags text[] not null default '{}', description text, source_name text not null, source_url text, apply_url text, verified boolean not null default false, status text not null default 'active', posted_at timestamptz, employer_id uuid references employer_profiles(id) on delete set null, created_at timestamptz not null default now(), updated_at timestamptz not null default now(), unique(source_name, external_id)
 );
 create table if not exists saved_jobs (profile_id uuid references profiles(id) on delete cascade, job_id uuid references jobs(id) on delete cascade, created_at timestamptz not null default now(), primary key(profile_id, job_id));
 create table if not exists applications (id uuid primary key default gen_random_uuid(), profile_id uuid references profiles(id) on delete cascade, job_id uuid references jobs(id) on delete cascade, status text not null default 'saved', applied_at timestamptz, notes text, created_at timestamptz not null default now(), updated_at timestamptz not null default now(), unique(profile_id, job_id));
@@ -30,6 +40,9 @@ create table if not exists sessions (
 create index if not exists jobs_location_idx on jobs(province, city);
 create index if not exists jobs_status_posted_idx on jobs(status, posted_at desc);
 create index if not exists sessions_expiry_idx on sessions(expires_at);
+create index if not exists employer_owner_idx on employer_profiles(owner_profile_id);
+create index if not exists employer_status_idx on employer_profiles(verification_status);
+create index if not exists jobs_employer_idx on jobs(employer_id);
 `;
 const send=(res,status,data,headers={})=>{res.writeHead(status,{'content-type':'application/json; charset=utf-8','access-control-allow-origin':process.env.FRONTEND_ORIGIN||'*','access-control-allow-headers':'content-type, authorization','access-control-allow-methods':'GET,POST,PATCH,DELETE,OPTIONS','cache-control':'no-store',...headers});res.end(JSON.stringify(data));};
 const body=req=>new Promise((resolve,reject)=>{let raw='';req.on('data',c=>{raw+=c;if(raw.length>1000000){reject(new Error('payload_too_large'));req.destroy()}});req.on('end',()=>{try{resolve(raw?JSON.parse(raw):{})}catch{reject(new Error('invalid_json'))}});req.on('error',reject)});
@@ -40,7 +53,7 @@ const verifyPassword=(password,stored)=>{const [salt,hash]=String(stored||'').sp
 const makePasswordHash=password=>{const salt=crypto.randomBytes(16);const hash=crypto.scryptSync(password,salt,64);return `${salt.toString('hex')}:${hash.toString('hex')}`};
 const hashToken=token=>crypto.createHash('sha256').update(token).digest('hex');
 const issueSession=async(db,profileId)=>{const token=crypto.randomBytes(32).toString('hex');await db.query('insert into sessions(token_hash,profile_id,expires_at) values($1,$2,$3)',[hashToken(token),profileId,new Date(Date.now()+SESSION_TTL_MS)]);return token};
-const getSession=async(req,db)=>{const auth=req.headers.authorization||'';if(!auth.startsWith('Bearer '))return null;const token=auth.slice(7);if(token.length!==64)return null;const r=await db.query('select token_hash,profile_id,expires_at from sessions where token_hash=$1 and expires_at>now()',[hashToken(token)]);if(!r.rowCount)return null;await db.query('update sessions set last_seen_at=now() where token_hash=$1',[hashToken(token)]);return {token,profileId:r.rows[0].profile_id}};
+const getSession=async(req,db)=>{const auth=req.headers.authorization||'';if(!auth.startsWith('Bearer '))return null;const token=auth.slice(7);if(token.length!==64)return null;const r=await db.query('select token_hash,profile_id from sessions where token_hash=$1 and expires_at>now()',[hashToken(token)]);if(!r.rowCount)return null;await db.query('update sessions set last_seen_at=now() where token_hash=$1',[hashToken(token)]);return {token,profileId:r.rows[0].profile_id}};
 const cleanProfile=row=>({id:row.id,email:row.email,name:row.name,emailVerified:row.email_verified,skills:row.skills||[],preferredModes:row.preferred_modes||[],preferredProvinces:row.preferred_provinces||[],targetLevels:row.target_levels||[],minimumSalaryJt:Number(row.minimum_salary_jt||0)});
 const rateKey=req=>`${req.socket.remoteAddress||'unknown'}:${req.url?.split('?')[0]||'/'}`;
 const rateLimited=req=>{const now=Date.now();const key=rateKey(req);const bucket=rateBuckets.get(key);if(!bucket||now-bucket.startedAt>RATE_WINDOW_MS){rateBuckets.set(key,{startedAt:now,count:1});return false}bucket.count++;return bucket.count>RATE_LIMIT};
@@ -79,10 +92,26 @@ const server=http.createServer(async(req,res)=>{
   }
   if(url.pathname==='/api/profile'&&req.method==='GET'){if(!session)return send(res,401,{error:'unauthorized'});const r=await db.query('select * from profiles where id=$1',[session.profileId]);return send(res,200,{profile:cleanProfile(r.rows[0])})}
 
+  if(url.pathname==='/api/employers'&&req.method==='POST'){
+   if(!session)return send(res,401,{error:'unauthorized'});const d=await body(req);const legalName=String(d.legalName||'').trim(),displayName=String(d.displayName||legalName).trim(),website=String(d.website||'').trim(),businessEmail=String(d.businessEmail||'').trim().toLowerCase(),registration=String(d.businessRegistration||'').trim();
+   if(legalName.length<2||legalName.length>200||displayName.length<2||displayName.length>160)return send(res,400,{error:'invalid_employer_name'});
+   if(website&&website.length>300)return send(res,400,{error:'invalid_website'});
+   if(businessEmail&&!/^\S+@\S+\.\S+$/.test(businessEmail))return send(res,400,{error:'invalid_business_email'});
+   if(registration.length>160)return send(res,400,{error:'invalid_business_registration'});
+   const existing=await db.query('select id,verification_status from employer_profiles where owner_profile_id=$1 order by created_at desc limit 1',[session.profileId]);
+   if(existing.rowCount&&existing.rows[0].verification_status==='verified')return send(res,409,{error:'employer_already_verified',employerId:existing.rows[0].id});
+   const r=await db.query(`insert into employer_profiles(owner_profile_id,legal_name,display_name,website,business_email,business_registration) values($1,$2,$3,$4,$5,$6) returning *`,[session.profileId,legalName,displayName,website||null,businessEmail||null,registration||null]);
+   await db.query('insert into employer_verification_events(employer_id,actor_profile_id,status,notes) values($1,$2,$3,$4)',[r.rows[0].id,session.profileId,'pending','Employer verification request submitted']);
+   return send(res,201,{employer:{id:r.rows[0].id,legalName:r.rows[0].legal_name,displayName:r.rows[0].display_name,website:r.rows[0].website,verificationStatus:r.rows[0].verification_status}});
+  }
+  if(url.pathname==='/api/employers/me'&&req.method==='GET'){
+   if(!session)return send(res,401,{error:'unauthorized'});const r=await db.query('select id,legal_name,display_name,website,business_email,business_registration,verification_status,verification_notes,verified_at,created_at,updated_at from employer_profiles where owner_profile_id=$1 order by created_at desc',[session.profileId]);return send(res,200,{employers:r.rows.map(e=>({id:e.id,legalName:e.legal_name,displayName:e.display_name,website:e.website,businessEmail:e.business_email,businessRegistration:e.business_registration,verificationStatus:e.verification_status,verificationNotes:e.verification_notes,verifiedAt:e.verified_at,createdAt:e.created_at,updatedAt:e.updated_at}))});
+  }
+
   if(url.pathname==='/api/jobs'&&req.method==='GET'){
-   const q=String(url.searchParams.get('q')||'').trim(),province=String(url.searchParams.get('province')||'').trim(),level=String(url.searchParams.get('level')||'').trim(),mode=String(url.searchParams.get('mode')||'').trim();const values=[],where=["status='active'"];
-   if(q){values.push(`%${q.slice(0,120)}%`);where.push(`(title ilike $${values.length} or company ilike $${values.length} or city ilike $${values.length} or province ilike $${values.length} or array_to_string(tags,' ') ilike $${values.length})`)}if(province){values.push(province);where.push(`province=$${values.length}`)}if(level){values.push(level);where.push(`level=$${values.length}`)}if(mode){values.push(mode);where.push(`work_mode=$${values.length}`)}
-   const r=await db.query(`select id,external_id,title,company,province,city,salary_min_jt,salary_max_jt,work_mode,level,tags,description,source_name,source_url,apply_url,verified,posted_at from jobs where ${where.join(' and ')} order by posted_at desc nulls last limit 100`,values);return send(res,200,{jobs:r.rows,sourceConfigured:Boolean(process.env.NOVA_JOB_FEED_URL),notice:r.rowCount?'Live database jobs':'No live jobs ingested yet'});
+   const q=String(url.searchParams.get('q')||'').trim(),province=String(url.searchParams.get('province')||'').trim(),level=String(url.searchParams.get('level')||'').trim(),mode=String(url.searchParams.get('mode')||'').trim();const values=[],where=["j.status='active'"];
+   if(q){values.push(`%${q.slice(0,120)}%`);where.push(`(j.title ilike $${values.length} or j.company ilike $${values.length} or j.city ilike $${values.length} or j.province ilike $${values.length} or array_to_string(j.tags,' ') ilike $${values.length})`)}if(province){values.push(province);where.push(`j.province=$${values.length}`)}if(level){values.push(level);where.push(`j.level=$${values.length}`)}if(mode){values.push(mode);where.push(`j.work_mode=$${values.length}`)}
+   const r=await db.query(`select j.id,j.external_id,j.title,j.company,j.province,j.city,j.salary_min_jt,j.salary_max_jt,j.work_mode,j.level,j.tags,j.description,j.source_name,j.source_url,j.apply_url,(ep.verification_status='verified' and ep.id is not null) as verified,j.posted_at,ep.id as employer_id,ep.display_name as verified_employer_name from jobs j left join employer_profiles ep on ep.id=j.employer_id where ${where.join(' and ')} order by j.posted_at desc nulls last limit 100`,values);return send(res,200,{jobs:r.rows,sourceConfigured:Boolean(process.env.NOVA_JOB_FEED_URL),notice:r.rowCount?'Live database jobs':'No live jobs ingested yet'});
   }
   if(url.pathname==='/api/saved'){
    if(!session)return send(res,401,{error:'unauthorized'});
