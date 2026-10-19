@@ -26,7 +26,7 @@ function buildSources(keyword: string, location: string) {
     { name: 'Pasker ID / Karirhub', detail: 'Portal resmi Kementerian Ketenagakerjaan', url: `https://www.google.com/search?q=${encodeURIComponent(`site:paskerid.kemnaker.go.id ${q} ${where} lowongan kerja`)}` },
     { name: 'HiredToday', detail: 'Portal yang terintegrasi dengan Karirhub', url: `https://www.google.com/search?q=${encodeURIComponent(`site:hiredtoday.com ${q} ${where} jobs`)}` },
     { name: 'Toploker', detail: 'Pencarian lowongan Indonesia', url: `https://www.google.com/search?q=${encodeURIComponent(`site:toploker.com ${q} ${where} lowongan kerja`)}` },
-    { name: 'Redy', detail: 'Pencarian peluang kerja lokal', url: `https://www.google.com/search?q=${encodeURIComponent(`Redy lowongan kerja ${q} ${where}`)}` },
+    { name: 'Redy', detail: 'Pencarian peluang kerja lokal', url: `https://www.getredy.id/lowongan?search=${encodeURIComponent(`${q} ${where}`)}` },
     { name: 'Glints', detail: 'Pekerjaan profesional dan awal karier', url: `https://glints.com/id/opportunities/jobs/explore?keyword=${encodeURIComponent(q)}&location=${encodeURIComponent(where)}` },
     { name: 'Jobstreet Indonesia', detail: 'Peluang lintas industri', url: `https://id.jobstreet.com/id/jobs?keywords=${encodeURIComponent(q)}&where=${encodeURIComponent(where)}` },
     { name: 'LinkedIn Jobs', detail: 'Profesional, remote, dan magang', url: `https://id.linkedin.com/jobs/search/?keywords=${encodeURIComponent(q)}&location=${encodeURIComponent(where)}` },
