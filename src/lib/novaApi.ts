@@ -17,12 +17,10 @@ export async function login(email:string,password:string){const r=await request<
 export function me(){return request<{profile:ApiProfile}>('/api/auth/me');}
 export function logout(){const token=getAuthToken();clearAuthToken();return token?request<{ok:true}>('/api/auth/logout',{method:'POST'}):Promise.resolve({ok:true as const});}
 export function updateProfile(profile:Partial<{name:string;skills:string[];preferredModes:string[];preferredProvinces:string[];targetLevels:string[];minimumSalaryJt:number}>){return request<{profile:ApiProfile}>('/api/profile',{method:'PATCH',body:JSON.stringify(profile)});}
-export function getJobs(filters:{q?:string;province?:string;level?:string;mode?:string}={}){const params=new URLSearchParams();Object.entries(filters).forEach(([k,v])=>{if(v)params.set(k,v)});return request<{jobs:ApiJob[]}>(`/api/jobs${params.toString()?`?${params}`:''}`)}
-export function getProfile(email:string){return request<{profile:ApiProfile}>(`/api/profiles?email=${encodeURIComponent(email)}`)}
-export function saveProfile(profile:{email:string;name?:string;skills:string[];preferredModes:string[];preferredProvinces:string[];targetLevels:string[];minimumSalaryJt:number}){return request<{profile:ApiProfile}>('/api/profiles',{method:'POST',body:JSON.stringify(profile)})}
-export function getSavedJobs(profileId:string){return request<{jobs:ApiJob[]}>(`/api/profiles/${encodeURIComponent(profileId)}/saved`)}
-export function saveJob(profileId:string,jobId:string){return request<{ok:true}>(`/api/profiles/${encodeURIComponent(profileId)}/saved`,{method:'POST',body:JSON.stringify({jobId})})}
-export function removeSavedJob(profileId:string,jobId:string){return request<{ok:true}>(`/api/profiles/${encodeURIComponent(profileId)}/saved?jobId=${encodeURIComponent(jobId)}`,{method:'DELETE'})}
-export function getApplications(profileId:string){return request<{applications:Array<Record<string,unknown>>}>(`/api/profiles/${encodeURIComponent(profileId)}/applications`)}
-export function createApplication(profileId:string,jobId:string,notes?:string){return request<{application:Record<string,unknown>}>(`/api/profiles/${encodeURIComponent(profileId)}/applications`,{method:'POST',body:JSON.stringify({jobId,notes})})}
-export function healthCheck(){return request<{ok:boolean;database:boolean;now:string}>('/api/health')}
+export function getJobs(filters:{q?:string;province?:string;level?:string;mode?:string}={}){const params=new URLSearchParams();Object.entries(filters).forEach(([k,v])=>{if(v)params.set(k,v)});return request<{jobs:ApiJob[];sourceConfigured:boolean;notice:string}>(`/api/jobs${params.toString()?`?${params}`:''}`)}
+export function getSavedJobs(){return request<{jobs:ApiJob[]}>('/api/saved');}
+export function saveJob(jobId:string){return request<{ok:true}>('/api/saved',{method:'POST',body:JSON.stringify({jobId})});}
+export function removeSavedJob(jobId:string){return request<{ok:true}>(`/api/saved?jobId=${encodeURIComponent(jobId)}`,{method:'DELETE'});}
+export function getApplications(){return request<{applications:Array<Record<string,unknown>>}>('/api/applications');}
+export function createApplication(jobId:string,notes?:string){return request<{application:Record<string,unknown>}>('/api/applications',{method:'POST',body:JSON.stringify({jobId,notes,status:'applied'})});}
+export function healthCheck(){return request<{ok:boolean;database:boolean;now:string;jobFeedConfigured:boolean}>('/api/health');}
