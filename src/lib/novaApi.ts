@@ -7,6 +7,7 @@ export type ApiJob = {
 export type ApiProfile={id:string;email:string;name?:string|null;emailVerified:boolean;skills:string[];preferredModes:string[];preferredProvinces:string[];targetLevels:string[];minimumSalaryJt:number};
 export type ApiApplication={id:string;job_id:string;status:string;applied_at?:string|null;notes?:string|null;title?:string;company?:string;city?:string;province?:string;level?:string;work_mode?:string;apply_url?:string|null};
 export type ApiEmployer={id:string;legalName:string;displayName:string;website?:string|null;businessEmail?:string|null;businessRegistration?:string|null;verificationStatus:'pending'|'verified'|'rejected';verificationNotes?:string|null;verifiedAt?:string|null;createdAt:string;updatedAt:string};
+export type ApiNotification={id:string;type:string;title:string;body:string;href?:string|null;read_at?:string|null;created_at:string};
 const API_BASE=(import.meta.env.VITE_API_BASE_URL||'').replace(/\/$/,'');
 // Authentication is persisted only in the server-issued HttpOnly cookie.
 export const getAuthToken=()=>null;
@@ -29,3 +30,7 @@ export function createApplication(jobId:string,notes?:string){return request<{ap
 export function getMyEmployers(){return request<{employers:ApiEmployer[]}>('/api/employers/me');}
 export function submitEmployerVerification(input:{legalName:string;displayName?:string;website?:string;businessEmail?:string;businessRegistration?:string}){return request<{employer:Pick<ApiEmployer,'id'|'legalName'|'displayName'|'website'|'verificationStatus'>}>('/api/employers',{method:'POST',body:JSON.stringify(input)});}
 export function healthCheck(){return request<{ok:boolean;database:boolean;now:string;jobFeedConfigured:boolean}>('/api/health');}
+
+export function getNotifications(){return request<{notifications:ApiNotification[];unreadCount:number}>('/api/notifications');}
+export function markNotificationRead(id:string){return request<{ok:true}>(`/api/notifications/${encodeURIComponent(id)}/read`,{method:'PATCH'});}
+export function markAllNotificationsRead(){return request<{ok:true}>('/api/notifications/mark-all-read',{method:'PATCH'});}
