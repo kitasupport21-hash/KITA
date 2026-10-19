@@ -21,3 +21,10 @@ The regional fallback includes role families for AI/data, software/cybersecurity
 ## Regional reference data
 
 `src/data/indonesia-provinces.json` and three chunked `src/data/indonesia-regencies-*.json` files include 38 provinces and 514 kabupaten/kota, with province parent IDs. Upstream source: `https://github.com/izzulabadi/api-wilayah-indonesia-2026`. Check upstream updates and verify regional names before changing the dataset.
+
+
+## City-specific freshness and government announcements
+
+- The region picker covers all 38 provinces and 514 kabupaten/kota. Choosing a city/regency builds source searches with that city and its parent province instead of searching Indonesia generically. Jobstreet, LinkedIn, Indeed, and Glints shortcuts request newest/listed-date sorting where supported; generic search-engine shortcuts limit results to the last month. External search results are not imported into NOVA's database and still need source/date/employer verification.
+- `GET /api/public/government-jobs` reads BKN RI's public announcement archive, keeps recent dated entries, validates that article links stay on the official `bkn.go.id` HTTPS domain, and labels recruitment notices separately from results/administrative announcements. The app also links directly to the official SSCASN portal and Pasker ID. The BKN archive is not a complete API of all 514 local governments or every ministry, so NOVA does not claim comprehensive nationwide agency coverage until authorized feeds/official sources for those agencies are added.
+- Government notice data shows source, publication date, title, summary and official article link. It does not infer an open deadline or guarantee that an announcement is still accepting applications. The user must confirm the official document and current deadline before applying.
