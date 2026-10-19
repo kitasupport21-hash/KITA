@@ -23,9 +23,5 @@ jobs:
           node-version: 22
       - name: Install dependencies
         run: npm install
-      - name: Typecheck
-        run: npm run typecheck
-      - name: Production build
-        run: npm run build
-      - name: Server syntax check
-        run: node --check server/index.mjs
+      - name: Full verification suite
+        run: npm run check
