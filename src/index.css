@@ -55,3 +55,5 @@
 @media(max-width:560px){.government-portals{grid-template-columns:1fr}.government-notice-card .official-job-actions{flex-wrap:wrap}}
 
 .source-refresh-button{font:inherit;cursor:pointer;background:transparent;border:1px solid var(--line,#cbd5e1);white-space:nowrap}.source-refresh-button:disabled{opacity:.6;cursor:wait}
+
+.government-source-status{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0 12px}.government-source-status span{font-size:10px;padding:5px 8px;border-radius:8px;background:var(--soft,#f1f5f9);color:var(--muted,#64748b)}.government-source-status .source-ok{color:#166534;background:#dcfce7}.government-source-status .source-down{color:#9a3412;background:#ffedd5}
