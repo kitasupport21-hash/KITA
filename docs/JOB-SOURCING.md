@@ -30,3 +30,8 @@ The regional fallback includes role families for AI/data, software/cybersecurity
 - Government notice data shows source, publication date, title, summary and official article link. It does not infer an open deadline or guarantee that an announcement is still accepting applications. The user must confirm the official document and current deadline before applying.
 
 - The official government-announcement endpoint also checks the Ministry of Health's public announcement archive (`kemkes.go.id`) in addition to BKN, accepts only official HTTPS article links, filters dated recruitment/selection notices, and merges/deduplicates them by date. Source availability is tracked separately so one unavailable agency does not hide the other. This is still a monitored subset of government sources, not a complete feed for every Indonesian ministry/local government.
+
+
+## Authorized source integration blocker
+
+Kemnaker's JOSS documentation describes an official create/update vacancy API and shows request-signing headers (`Client-Id`, `Request-Id`, `Request-Timestamp`, and `Signature`): https://joss.docs.kemnaker.go.id/put-job-vacancy-13014910e0. This is an integration interface, not an anonymous public vacancy feed. NOVA must only connect to it after the owner obtains approved API access and the required credentials/signing specification from Kemnaker. Do not put those credentials in frontend code or commit them to the repository. Until access is supplied, the app uses public, attributable discovery links and does not fabricate database records. The sync endpoint now commits each accepted feed refresh as one database transaction, so a failed write rolls the whole refresh back instead of leaving a partial catalogue.
