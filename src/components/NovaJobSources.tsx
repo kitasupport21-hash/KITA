@@ -25,7 +25,7 @@ function buildSources(keyword: string, location: string) {
   const q = keyword.trim() || 'lowongan kerja';
   const where = location === 'Indonesia' ? 'Indonesia' : `${location}, Indonesia`;
   return [
-    { name: 'Pasker ID / Karirhub', detail: 'Portal resmi Kementerian Ketenagakerjaan', url: `https://www.google.com/search?q=${encodeURIComponent(`site:paskerid.kemnaker.go.id ${q} ${where} lowongan kerja`)}` },
+    { name: 'Pasker ID / Karirhub', detail: 'Portal resmi Kementerian Ketenagakerjaan', url: `https://paskerid.kemnaker.go.id/miniJobi?search=${encodeURIComponent(`${q} ${location === 'Indonesia' ? '' : location}`.trim())}` },
     { name: 'HiredToday', detail: 'Portal yang terintegrasi dengan Karirhub', url: `https://www.google.com/search?q=${encodeURIComponent(`site:hiredtoday.com ${q} ${where} jobs`)}` },
     { name: 'Toploker', detail: 'Pencarian lowongan Indonesia', url: `https://www.google.com/search?q=${encodeURIComponent(`site:toploker.com ${q} ${where} lowongan kerja`)}` },
     { name: 'Redy', detail: 'Pencarian peluang kerja lokal', url: `https://www.getredy.id/lowongan?search=${encodeURIComponent(`${q} ${where}`)}` },
