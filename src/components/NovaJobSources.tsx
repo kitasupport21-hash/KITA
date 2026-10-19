@@ -7,6 +7,8 @@ type Province = { id: string; name: string };
 type Regency = { id: string; provinceId: string; name: string };
 type OfficialJob = { id: string; title: string; company: string; city: string; workMode: string; category: string; description: string; salaryText: string; sourceUrl: string; applyUrl: string; deadline: string; verifiedSource: boolean };
 type OfficialFeed = { jobs: OfficialJob[]; sourceUrl: string; checkedAt: string; notice: string; live: boolean };
+type GovernmentNotice = { id: string; title: string; agency: string; category: 'recruitment' | 'announcement'; summary: string; sourceName: string; sourceUrl: string; applyUrl: string; postedAt: string; verifiedSource: boolean; applicationStatus: string };
+type GovernmentFeed = { announcements: GovernmentNotice[]; sourceUrl: string; checkedAt: string; notice: string; live: boolean; officialPortal: string };
 const PROVINCES = provinceData as Province[];
 const REGENCIES = INDONESIAN_REGENCIES as Regency[];
 
@@ -26,13 +28,13 @@ function buildSources(keyword: string, location: string) {
   const where = location === 'Indonesia' ? 'Indonesia' : `${location}, Indonesia`;
   return [
     { name: 'Pasker ID / Karirhub', detail: 'Portal resmi Kementerian Ketenagakerjaan', url: `https://paskerid.kemnaker.go.id/miniJobi?search=${encodeURIComponent(`${q} ${location === 'Indonesia' ? '' : location}`.trim())}` },
-    { name: 'HiredToday', detail: 'Portal yang terintegrasi dengan Karirhub', url: `https://www.google.com/search?q=${encodeURIComponent(`site:hiredtoday.com ${q} ${where} jobs`)}` },
-    { name: 'Toploker', detail: 'Pencarian lowongan Indonesia', url: `https://www.google.com/search?q=${encodeURIComponent(`site:toploker.com ${q} ${where} lowongan kerja`)}` },
+    { name: 'HiredToday', detail: 'Portal yang terintegrasi dengan Karirhub', url: `https://www.google.com/search?q=${encodeURIComponent(`site:hiredtoday.com ${q} ${where} jobs`)}&tbs=qdr:m` },
+    { name: 'Toploker', detail: 'Pencarian lowongan Indonesia', url: `https://www.google.com/search?q=${encodeURIComponent(`site:toploker.com ${q} ${where} lowongan kerja`)}&tbs=qdr:m` },
     { name: 'Redy', detail: 'Pencarian peluang kerja lokal', url: `https://www.getredy.id/lowongan?search=${encodeURIComponent(`${q} ${where}`)}` },
-    { name: 'Glints', detail: 'Pekerjaan profesional dan awal karier', url: `https://glints.com/id/opportunities/jobs/explore?keyword=${encodeURIComponent(q)}&location=${encodeURIComponent(where)}` },
-    { name: 'Jobstreet Indonesia', detail: 'Peluang lintas industri', url: `https://id.jobstreet.com/id/jobs?keywords=${encodeURIComponent(q)}&where=${encodeURIComponent(where)}` },
-    { name: 'LinkedIn Jobs', detail: 'Profesional, remote, dan magang', url: `https://id.linkedin.com/jobs/search/?keywords=${encodeURIComponent(q)}&location=${encodeURIComponent(where)}` },
-    { name: 'Indeed Indonesia', detail: 'Pencarian pekerjaan dan kata kunci', url: `https://id.indeed.com/jobs?q=${encodeURIComponent(q)}&l=${encodeURIComponent(where)}` },
+    { name: 'Glints', detail: 'Pekerjaan profesional dan awal karier', url: `https://glints.com/id/opportunities/jobs/explore?keyword=${encodeURIComponent(q)}&location=${encodeURIComponent(where)}&sortBy=LATEST` },
+    { name: 'Jobstreet Indonesia', detail: 'Peluang lintas industri', url: `https://id.jobstreet.com/id/jobs?keywords=${encodeURIComponent(q)}&where=${encodeURIComponent(where)}&sortmode=ListedDate` },
+    { name: 'LinkedIn Jobs', detail: 'Profesional, remote, dan magang', url: `https://id.linkedin.com/jobs/search/?keywords=${encodeURIComponent(q)}&location=${encodeURIComponent(where)}&sortBy=DD` },
+    { name: 'Indeed Indonesia', detail: 'Pencarian pekerjaan dan kata kunci', url: `https://id.indeed.com/jobs?q=${encodeURIComponent(q)}&l=${encodeURIComponent(where)}&sort=date` },
   ];
 }
 
@@ -44,6 +46,9 @@ export default function NovaJobSources({ keyword = '', province = 'All Indonesia
   const [officialFeed, setOfficialFeed] = useState<OfficialFeed | null>(null);
   const [officialLoading, setOfficialLoading] = useState(true);
   const [officialError, setOfficialError] = useState('');
+  const [governmentFeed, setGovernmentFeed] = useState<GovernmentFeed | null>(null);
+  const [governmentLoading, setGovernmentLoading] = useState(true);
+  const [governmentError, setGovernmentError] = useState('');
   useEffect(() => {
     let cancelled = false;
     fetch('/api/public/jobs/pasker', { headers: { accept: 'application/json' } })
@@ -53,13 +58,22 @@ export default function NovaJobSources({ keyword = '', province = 'All Indonesia
       .finally(() => { if (!cancelled) setOfficialLoading(false); });
     return () => { cancelled = true; };
   }, []);
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/public/government-jobs', { headers: { accept: 'application/json' } })
+      .then(async (response) => { const data = await response.json(); if (!response.ok) throw new Error(data.notice || data.error || 'Government announcements unavailable'); return data as GovernmentFeed; })
+      .then((data) => { if (!cancelled) { setGovernmentFeed(data); setGovernmentError(''); } })
+      .catch((error: unknown) => { if (!cancelled) setGovernmentError(error instanceof Error ? error.message : 'Government announcements unavailable'); })
+      .finally(() => { if (!cancelled) setGovernmentLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
   const availableRegencies = useMemo(() => REGENCIES
     .filter((item) => !selectedProvince || item.provinceId === selectedProvince)
     .slice().sort((a, b) => a.name.localeCompare(b.name, 'id')), [selectedProvince]);
   const effectiveKeyword = selectedRole || customKeyword.trim() || keyword.trim() || 'lowongan kerja';
   const regency = REGENCIES.find((item) => item.id === selectedRegency);
   const provinceName = PROVINCES.find((item) => item.id === selectedProvince)?.name;
-  const effectiveLocation = regency?.name || (selectedProvince ? provinceName || 'Indonesia' : 'Indonesia');
+  const effectiveLocation = regency ? `${regency.name}, ${provinceName || 'Indonesia'}` : (selectedProvince ? provinceName || 'Indonesia' : 'Indonesia');
   const sources = useMemo(() => buildSources(effectiveKeyword, effectiveLocation), [effectiveKeyword, effectiveLocation]);
 
   return <section className="source-panel" aria-label="External Indonesian job portals">
@@ -77,6 +91,14 @@ export default function NovaJobSources({ keyword = '', province = 'All Indonesia
       <p className="source-note">NOVA checks the public miniJobi page from Indonesia’s Ministry of Manpower. Listings past their application deadline are excluded; applications remain on the official portal.</p>
       {officialLoading ? <p className="official-feed-status">Memeriksa lowongan resmi terbaru…</p> : officialError ? <p className="official-feed-status">{officialError}. <a href="https://paskerid.kemnaker.go.id/miniJobi" target="_blank" rel="noopener noreferrer">Periksa Pasker ID langsung.</a></p> : officialFeed?.jobs.length ? <div className="official-job-list">{officialFeed.jobs.map((job) => <article className="official-job-card" key={job.id}><div><strong>{job.title}</strong><span>{job.company} · {job.city || 'Lokasi lihat detail'}</span><small>{job.workMode}{job.category ? ` · ${job.category}` : ''}{job.salaryText ? ` · ${job.salaryText}` : ''}</small><small>Batas lamaran: {new Date(job.deadline).toLocaleDateString('id-ID')}</small></div><div className="official-job-actions"><a href={job.sourceUrl} target="_blank" rel="noopener noreferrer">Detail</a><a href={job.applyUrl} target="_blank" rel="noopener noreferrer">Lamar ↗</a></div></article>)}</div> : <div className="official-feed-status">{officialFeed?.notice || 'Belum ada lowongan aktif yang lolos pemeriksaan tanggal.'} <a href="https://paskerid.kemnaker.go.id/miniJobi" target="_blank" rel="noopener noreferrer">Lihat halaman resmi ↗</a></div>}
       {!officialLoading && officialFeed?.checkedAt && <p className="official-feed-updated">Last checked: {new Date(officialFeed.checkedAt).toLocaleString('id-ID')} · Source: <a href={officialFeed.sourceUrl} target="_blank" rel="noopener noreferrer">paskerid.kemnaker.go.id</a></p>}
+    </div>
+
+    <div className="government-jobs-panel">
+      <div className="source-heading"><div><span className="eyebrow">PEMERINTAH · SUMBER RESMI</span><h3>Pengumuman rekrutmen pemerintah Indonesia</h3></div><a className="source-live-label source-live-link" href="https://www.bkn.go.id/category/publikasi/pengumuman/" target="_blank" rel="noopener noreferrer">BKN RI ↗</a></div>
+      <p className="source-note">Feed ini memantau arsip pengumuman BKN dan menautkan portal SSCASN serta Pasker Kemnaker. Ini adalah sumber pemerintah terverifikasi yang tersedia saat ini, bukan klaim bahwa setiap pemerintah daerah/kementerian sudah terintegrasi. NOVA membedakan rekrutmen dari hasil seleksi; periksa tenggat dan persyaratan di dokumen resmi.</p>
+      <div className="government-portals"><a href="https://www.bkn.go.id/category/publikasi/pengumuman/" target="_blank" rel="noopener noreferrer"><strong>Pengumuman BKN</strong><small>Seleksi, hasil, dan informasi ASN</small></a><a href="https://sscasn.bkn.go.id/" target="_blank" rel="noopener noreferrer"><strong>Portal SSCASN</strong><small>Portal resmi seleksi ASN</small></a><a href="https://paskerid.kemnaker.go.id/miniJobi" target="_blank" rel="noopener noreferrer"><strong>Lowongan Pasker ID</strong><small>Lowongan umum dari Kemnaker</small></a></div>
+      {governmentLoading ? <p className="official-feed-status">Memeriksa pengumuman pemerintah terbaru…</p> : governmentError ? <p className="official-feed-status">{governmentError} <a href="https://www.bkn.go.id/category/publikasi/pengumuman/" target="_blank" rel="noopener noreferrer">Buka arsip BKN.</a></p> : governmentFeed?.announcements.length ? <div className="official-job-list">{governmentFeed.announcements.map((item) => <article className="government-notice-card" key={item.id}><div className="government-notice-meta"><span className={item.category === 'recruitment' ? 'government-status recruitment' : 'government-status'}>{item.category === 'recruitment' ? 'Pengumuman rekrutmen' : 'Pengumuman resmi'}</span><small>{new Date(item.postedAt).toLocaleDateString('id-ID')}</small></div><strong>{item.title}</strong><span>{item.agency}</span>{item.summary && <p>{item.summary}</p>}<small>{item.applicationStatus}</small><div className="official-job-actions"><a href={item.sourceUrl} target="_blank" rel="noopener noreferrer">Baca pengumuman ↗</a>{item.category === 'recruitment' && <a href={item.applyUrl} target="_blank" rel="noopener noreferrer">Syarat & detail ↗</a>}</div></article>)}</div> : <p className="official-feed-status">{governmentFeed?.notice || 'Belum ada pengumuman baru yang ditemukan.'}</p>}
+      {!governmentLoading && governmentFeed?.checkedAt && <p className="official-feed-updated">Last checked: {new Date(governmentFeed.checkedAt).toLocaleString('id-ID')} · <a href={governmentFeed.sourceUrl} target="_blank" rel="noopener noreferrer">Sumber BKN</a></p>}
     </div>
 
     <div className="future-role-heading"><b>Bidang karier masa depan</b><span>Choose a role family</span></div>
