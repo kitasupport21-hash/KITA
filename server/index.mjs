@@ -79,6 +79,38 @@ const server=http.createServer(async(req,res)=>{
  try{
   const url=new URL(req.url||'/',`http://${req.headers.host||'localhost'}`);const db=requireDb();
   if(url.pathname==='/api/health'&&req.method==='GET'){const r=await db.query('select now() as now');return send(res,200,{ok:true,database:true,now:r.rows[0].now,jobFeedConfigured:Boolean(process.env.NOVA_JOB_FEED_URL)})}
+  if(url.pathname==='/api/admin/jobs/sync'&&req.method==='POST'){
+   const expected=process.env.NOVA_SYNC_SECRET||'';
+   const supplied=String(req.headers['x-nova-sync-secret']||'');
+   if(!expected)return send(res,503,{error:'sync_secret_not_configured'});
+   const expectedBuffer=Buffer.from(expected),suppliedBuffer=Buffer.from(supplied);
+   if(expectedBuffer.length!==suppliedBuffer.length||!crypto.timingSafeEqual(expectedBuffer,suppliedBuffer))return send(res,403,{error:'forbidden'});
+   if(!process.env.NOVA_JOB_FEED_URL)return send(res,503,{error:'job_feed_not_configured'});
+   let feedUrl;try{feedUrl=new URL(process.env.NOVA_JOB_FEED_URL)}catch{return send(res,503,{error:'invalid_job_feed_url'})}
+   if(feedUrl.protocol!=='https:'&&feedUrl.hostname!=='localhost')return send(res,503,{error:'job_feed_must_use_https'});
+   const response=await fetch(feedUrl,{headers:{accept:'application/json'},signal:AbortSignal.timeout(15000)});
+   if(!response.ok)return send(res,502,{error:'job_feed_request_failed',upstreamStatus:response.status});
+   const payload=await response.json();const items=Array.isArray(payload)?payload:payload?.jobs;
+   if(!Array.isArray(items))return send(res,502,{error:'invalid_job_feed_format'});
+   if(items.length>5000)return send(res,413,{error:'job_feed_too_large'});
+   let imported=0,skipped=0;
+   for(const item of items){
+    const externalId=String(item?.externalId??item?.external_id??'').trim().slice(0,200);
+    const title=String(item?.title||'').trim().slice(0,200),company=String(item?.company||'').trim().slice(0,200);
+    const sourceName=String(item?.sourceName??item?.source_name??feedUrl.hostname).trim().slice(0,120);
+    if(!externalId||!title||!company||!sourceName){skipped++;continue}
+    const safeUrl=value=>{try{const u=new URL(String(value||''));return ['https:','http:'].includes(u.protocol)?u.toString().slice(0,2000):null}catch{return null}};
+    const tags=Array.isArray(item.tags)?item.tags.map(x=>String(x).trim()).filter(Boolean).slice(0,30):[];
+    const numberOrNull=value=>value==null||value===''||!Number.isFinite(Number(value))?null:Number(value);
+    const postedAt=item.postedAt??item.posted_at;const postedDate=postedAt&&Number.isFinite(Date.parse(postedAt))?new Date(postedAt).toISOString():null;
+    await db.query(`insert into jobs(external_id,title,company,province,city,salary_min_jt,salary_max_jt,work_mode,level,tags,description,source_name,source_url,apply_url,status,posted_at)
+     values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,'active',$15)
+     on conflict(source_name,external_id) do update set title=excluded.title,company=excluded.company,province=excluded.province,city=excluded.city,salary_min_jt=excluded.salary_min_jt,salary_max_jt=excluded.salary_max_jt,work_mode=excluded.work_mode,level=excluded.level,tags=excluded.tags,description=excluded.description,source_url=excluded.source_url,apply_url=excluded.apply_url,status='active',posted_at=excluded.posted_at,updated_at=now()`,
+    [externalId,title,company,String(item.province||'').slice(0,120)||null,String(item.city||'').slice(0,120)||null,numberOrNull(item.salaryMinJt??item.salary_min_jt),numberOrNull(item.salaryMaxJt??item.salary_max_jt),String(item.workMode??item.work_mode??'').slice(0,40)||null,String(item.level||'').slice(0,40)||null,tags,String(item.description||'').slice(0,12000)||null,sourceName,safeUrl(item.sourceUrl??item.source_url),safeUrl(item.applyUrl??item.apply_url),postedDate]);
+    imported++;
+   }
+   return send(res,200,{ok:true,received:items.length,imported,skipped,source:feedUrl.hostname});
+  }
   if(url.pathname==='/api/auth/signup'&&req.method==='POST'){
    const d=await body(req);const email=String(d.email||'').trim().toLowerCase();const password=String(d.password||'');const name=String(d.name||'').trim();
    if(!/^\S+@\S+\.\S+$/.test(email))return send(res,400,{error:'invalid_email'});if(password.length<8||password.length>200)return send(res,400,{error:'invalid_password'});if(name.length>120)return send(res,400,{error:'invalid_name'});
