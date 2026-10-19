@@ -21,7 +21,7 @@ export function parsePaskerMiniJobi(html, now = new Date()) {
   const cards = [...String(html || '').matchAll(cardRegex)].map((match) => match[1]).filter((card) => /miniJobi\/\d+/.test(card) && /Batas Lamar/.test(card));
   for (const card of cards) {
     const title = extract(card, /<h3[^>]*>([\s\S]*?)<\/h3>/i);
-    const company = extract(card, /<div class="small text-muted mb-3">([\s\S]*?)<\/div>/i);
+    const company = extract(card, /<div class="[^"]*\bsmall\b[^"]*\bmb-3\b[^"]*">([\s\S]*?)<\/div>/i);
     const detailPath = card.match(/href="(https:\/\/paskerid\.kemnaker\.go\.id\/miniJobi\/\d+)"/i)?.[1];
     const deadlineText = extract(card, /<strong>\s*Batas Lamar:\s*<\/strong>\s*([^<]+)/i);
     const deadline = parseDeadline(deadlineText);
@@ -44,11 +44,21 @@ export function parsePaskerMiniJobi(html, now = new Date()) {
 }
 
 export async function getLivePaskerJobs({ now = new Date(), fetchImpl = fetch } = {}) {
-  const response = await fetchImpl(`${BASE}/miniJobi`, {
-    headers: { accept: 'text/html', 'user-agent': 'NOVA-JobDiscovery/1.0 (public official job listing reader)' },
-    signal: AbortSignal.timeout(10000),
-  });
-  if (!response.ok) throw new Error(`pasker_upstream_${response.status}`);
-  const html = await response.text();
-  return { jobs: parsePaskerMiniJobi(html, now), sourceUrl: `${BASE}/miniJobi`, checkedAt: now.toISOString() };
+  const headers = { accept: 'text/html', 'user-agent': 'NOVA-JobDiscovery/1.0 (public official job listing reader)' };
+  const firstUrl = `${BASE}/miniJobi`;
+  const fetchPage = async (url) => {
+    const response = await fetchImpl(url, { headers, signal: AbortSignal.timeout(10000) });
+    if (!response.ok) throw new Error(`pasker_upstream_${response.status}`);
+    return response.text();
+  };
+  const firstHtml = await fetchPage(firstUrl);
+  const pageUrls = [...firstHtml.matchAll(/href="(?:https?:\/\/paskerid\.kemnaker\.go\.id)?\/miniJobi\?page=(\d+)"/gi)]
+    .map((match) => ({ page: Number(match[1]), url: `${BASE}/miniJobi?page=${Number(match[1])}` }))
+    .filter((item) => Number.isInteger(item.page) && item.page > 1 && item.page <= 5)
+    .filter((item, index, all) => all.findIndex((other) => other.page === item.page) === index)
+    .slice(0, 4);
+  const pages = await Promise.all([firstHtml, ...await Promise.all(pageUrls.map((item) => fetchPage(item.url))) ]);
+  const jobs = pages.flatMap((html) => parsePaskerMiniJobi(html, now));
+  const unique = [...new Map(jobs.map((job) => [job.sourceUrl, job])).values()];
+  return { jobs: unique, sourceUrl: firstUrl, checkedAt: now.toISOString(), pagesChecked: pages.length };
 }
