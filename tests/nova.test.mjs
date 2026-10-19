@@ -42,12 +42,14 @@ test('CV upload type gate does not pretend PDF/DOCX extraction exists', () => {
 
 test('Indonesia location reference contains all provinces and regencies with valid parent links', async () => {
   const { readFile } = await import('node:fs/promises');
-  const regions = JSON.parse(await readFile(new URL('../src/data/indonesia-regions.json', import.meta.url), 'utf8'));
-  assert.equal(regions.provinces.length, 38);
-  assert.equal(regions.regencies.length, 514);
-  const provinceIds = new Set(regions.provinces.map((item) => item.id));
-  assert.ok(regions.regencies.every((item) => provinceIds.has(item.provinceId)));
-  assert.equal(new Set(regions.regencies.map((item) => item.id)).size, 514);
+  const provinces = JSON.parse(await readFile(new URL('../src/data/indonesia-provinces.json', import.meta.url), 'utf8'));
+  const regencies = [];
+  for (const part of [1, 2, 3]) regencies.push(...JSON.parse(await readFile(new URL(`../src/data/indonesia-regencies-${part}.json`, import.meta.url), 'utf8')));
+  assert.equal(provinces.length, 38);
+  assert.equal(regencies.length, 514);
+  const provinceIds = new Set(provinces.map((item) => item.id));
+  assert.ok(regencies.every((item) => provinceIds.has(item.provinceId)));
+  assert.equal(new Set(regencies.map((item) => item.id)).size, 514);
 });
 
 test('district matching tolerates common Indonesian city-name prefixes', () => {
