@@ -97,3 +97,20 @@ test('feed import rejects missing location, stale dates, insecure URLs, and inva
   assert.equal(normalizeFeedJob({...base, salaryMinJt:10, salaryMaxJt:4}, 'fallback', now), null);
   assert.equal(normalizeFeedJob({...base, expiresAt:'2026-10-01'}, 'fallback', now), null);
 });
+
+test('official BKN announcements are dated, linked to the government domain, and distinguish recruitment from results', async () => {
+  const { parseBknGovernmentJobs } = await import('../server/government-jobs.mjs');
+  const html = `
+    <article><header><h2><a href="https://www.bkn.go.id/pengumuman-seleksi-tenaga-jasa-pengemudi-tahun-2026/">Pengumuman Seleksi Tenaga Jasa Pengemudi Tahun 2026</a></h2></header>
+      <ul><li class="meta-date"><span class="updated">09/09/2026</span></li></ul><div class="blog-entry-excerpt"><p>Badan Kepegawaian Negara membuka seleksi tenaga jasa pengemudi.</p></div></article>
+    <article><header><h2><a href="https://www.bkn.go.id/pengumuman-hasil-seleksi-administrasi/">Pengumuman Hasil Seleksi Administrasi</a></h2></header>
+      <ul><li class="meta-date"><span class="updated">17/09/2026</span></li></ul><div class="blog-entry-excerpt"><p>Hasil seleksi administrasi diumumkan.</p></div></article>
+    <article><header><h2><a href="https://attacker.example/fake/">Lowongan CPNS Palsu</a></h2></header>
+      <ul><li class="meta-date"><span class="updated">18/09/2026</span></li></ul></article>`;
+  const rows = parseBknGovernmentJobs(html, new Date('2026-10-19T00:00:00Z'));
+  assert.equal(rows.length, 2);
+  assert.equal(rows.length, 2);
+  assert.equal(rows[0].status, 'selection_update');
+  assert.equal(rows[1].status, 'official_notice');
+  assert.ok(rows.every((row) => row.verifiedSource && row.sourceUrl.startsWith('https://www.bkn.go.id/')));
+});
