@@ -2,7 +2,7 @@ name: NOVA CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, nova-preflight]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -21,7 +21,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
       - name: Install dependencies
-        run: npm install
+        run: npm ci
       - name: Full verification suite
         run: npm run check
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
