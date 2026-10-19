@@ -28,5 +28,14 @@ export function filterRegenciesForProvince(provinceName: string): IndonesianRege
 }
 
 export function regencyMatchesCity(regencyName: string, cityName: string): boolean {
-  return normalizeIndonesianLocation(regencyName) === normalizeIndonesianLocation(cityName);
+  const regency = normalizeIndonesianLocation(regencyName);
+  const city = normalizeIndonesianLocation(cityName);
+  if (regency === city) return true;
+  const hasType = (value: string) => /^(kabupaten|kota)\s/.test(value);
+  const bareName = (value: string) => value.replace(/^(kabupaten|kota)\s+/, '');
+  // Some feeds store only the city name, while others include its official type.
+  // If both include a type, keep Kota and Kabupaten distinct.
+  if (hasType(regency) && !hasType(city)) return bareName(regency) === city;
+  if (!hasType(regency) && hasType(city)) return regency === bareName(city);
+  return false;
 }
