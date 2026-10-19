@@ -3,6 +3,8 @@ import crypto from 'node:crypto';
 import path from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { Pool } from 'pg';
+import { normalizeFeedJob } from './job-feed.mjs';
+import { getLivePaskerJobs } from './pasker-feed.mjs';
 
 const port = Number(process.env.PORT || 10000);
 const staticDir = path.resolve(process.cwd(), 'dist');
@@ -28,56 +30,9 @@ create table if not exists employer_profiles (
  verification_notes text, verified_at timestamptz, created_at timestamptz not null default now(), updated_at timestamptz not null default now()
 );
 create table if not exists employer_verification_events (
- id uuid primary key default gen_random_uuid(), employer_id uuid not null references employer_profiles(id) on delete cascade,
- actor_profile_id uuid references profiles(id) on delete set null, status text not null, notes text, created_at timestamptz not null default now()
-);
-create table if not exists jobs (
- id uuid primary key default gen_random_uuid(), external_id text, title text not null, company text not null, province text, city text, salary_min_jt numeric, salary_max_jt numeric, work_mode text, level text, tags text[] not null default '{}', description text, source_name text not null, source_url text, apply_url text, verified boolean not null default false, status text not null default 'active', posted_at timestamptz, employer_id uuid references employer_profiles(id) on delete set null, created_at timestamptz not null default now(), updated_at timestamptz not null default now(), unique(source_name, external_id)
-);
-create table if not exists saved_jobs (profile_id uuid references profiles(id) on delete cascade, job_id uuid references jobs(id) on delete cascade, created_at timestamptz not null default now(), primary key(profile_id, job_id));
-create table if not exists applications (id uuid primary key default gen_random_uuid(), profile_id uuid references profiles(id) on delete cascade, job_id uuid references jobs(id) on delete cascade, status text not null default 'saved', applied_at timestamptz, notes text, created_at timestamptz not null default now(), updated_at timestamptz not null default now(), unique(profile_id, job_id));
-create table if not exists sessions (
- token_hash text primary key, profile_id uuid not null references profiles(id) on delete cascade,
- created_at timestamptz not null default now(), expires_at timestamptz not null, last_seen_at timestamptz not null default now()
-);
-create table if not exists notifications (
- id uuid primary key default gen_random_uuid(), profile_id uuid not null references profiles(id) on delete cascade,
- type text not null default 'system', title text not null, body text not null, href text,
- read_at timestamptz, created_at timestamptz not null default now()
-);
-create index if not exists notifications_profile_created_idx on notifications(profile_id, created_at desc);
-create table if not exists application_status_events (
- id uuid primary key default gen_random_uuid(), application_id uuid not null references applications(id) on delete cascade,
- old_status text, new_status text not null, note text, created_at timestamptz not null default now()
-);
-create index if not exists jobs_location_idx on jobs(province, city);
-create index if not exists jobs_status_posted_idx on jobs(status, posted_at desc);
-create index if not exists sessions_expiry_idx on sessions(expires_at);
-create index if not exists employer_owner_idx on employer_profiles(owner_profile_id);
-create index if not exists employer_status_idx on employer_profiles(verification_status);
-create index if not exists jobs_employer_idx on jobs(employer_id);
-`;
-const send=(res,status,data,headers={})=>{res.writeHead(status,{'content-type':'application/json; charset=utf-8','access-control-allow-origin':process.env.FRONTEND_ORIGIN||'http://localhost:5173','access-control-allow-credentials':'true','access-control-allow-headers':'content-type, authorization','access-control-allow-methods':'GET,POST,PATCH,DELETE,OPTIONS','vary':'Origin','cache-control':'no-store',...headers});res.end(JSON.stringify(data));};
-const body=req=>new Promise((resolve,reject)=>{let raw='';req.on('data',c=>{raw+=c;if(raw.length>1000000){reject(new Error('payload_too_large'));req.destroy()}});req.on('end',()=>{try{resolve(raw?JSON.parse(raw):{})}catch{reject(new Error('invalid_json'))}});req.on('error',reject)});
-const requireDb=()=>{if(!pool)throw new Error('DATABASE_URL is not configured');return pool};
-const normalizeArray=v=>Array.isArray(v)?v.map(x=>String(x).trim()).filter(Boolean).slice(0,100):null;
-const validStringArray=v=>v==null||normalizeArray(v)!==null;
-const verifyPassword=(password,stored)=>{const [salt,hash]=String(stored||'').split(':');if(!salt||!hash)return false;try{const derived=crypto.scryptSync(password,Buffer.from(salt,'hex'),64).toString('hex');return crypto.timingSafeEqual(Buffer.from(hash,'hex'),Buffer.from(derived,'hex'))}catch{return false}};
-const makePasswordHash=password=>{const salt=crypto.randomBytes(16);const hash=crypto.scryptSync(password,salt,64);return `${salt.toString('hex')}:${hash.toString('hex')}`};
-const hashToken=token=>crypto.createHash('sha256').update(token).digest('hex');
-const sessionCookie=(token,maxAge=SESSION_TTL_MS/1000)=>`nova_session=${token}; Path=/; HttpOnly; SameSite=${process.env.NODE_ENV==='production'?'None':'Lax'}; Max-Age=${maxAge}${process.env.NODE_ENV==='production'?'; Secure':''}`;
-const clearSessionCookie=()=>`nova_session=; Path=/; HttpOnly; SameSite=${process.env.NODE_ENV==='production'?'None':'Lax'}; Max-Age=0${process.env.NODE_ENV==='production'?'; Secure':''}`;
-const readSessionToken=req=>{const auth=req.headers.authorization||'';if(auth.startsWith('Bearer '))return auth.slice(7);const cookie=String(req.headers.cookie||'').split(';').map(x=>x.trim()).find(x=>x.startsWith('nova_session='));return cookie?decodeURIComponent(cookie.slice('nova_session='.length)):''};
-const issueSession=async(db,profileId)=>{const token=crypto.randomBytes(32).toString('hex');await db.query('insert into sessions(token_hash,profile_id,expires_at) values($1,$2,$3)',[hashToken(token),profileId,new Date(Date.now()+SESSION_TTL_MS)]);return token};
-const getSession=async(req,db)=>{const token=readSessionToken(req);if(token.length!==64)return null;const r=await db.query('select token_hash,profile_id from sessions where token_hash=$1 and expires_at>now()',[hashToken(token)]);if(!r.rowCount)return null;await db.query('update sessions set last_seen_at=now() where token_hash=$1',[hashToken(token)]);return {token,profileId:r.rows[0].profile_id}};
-const cleanProfile=row=>({id:row.id,email:row.email,name:row.name,emailVerified:row.email_verified,skills:row.skills||[],preferredModes:row.preferred_modes||[],preferredProvinces:row.preferred_provinces||[],targetLevels:row.target_levels||[],minimumSalaryJt:Number(row.minimum_salary_jt||0)});
-const rateKey=req=>`${req.socket.remoteAddress||'unknown'}:${req.url?.split('?')[0]||'/'}`;
-const rateLimited=req=>{const now=Date.now();const key=rateKey(req);const bucket=rateBuckets.get(key);if(!bucket||now-bucket.startedAt>RATE_WINDOW_MS){rateBuckets.set(key,{startedAt:now,count:1});return false}bucket.count++;return bucket.count>RATE_LIMIT};
-setInterval(async()=>{const now=Date.now();for(const [key,b] of rateBuckets)if(now-b.startedAt>RATE_WINDOW_MS)rateBuckets.delete(key);if(pool)try{await pool.query('delete from sessions where expires_at < $1',[new Date(now)])}catch(error){console.error('session cleanup failed',error.message)}},60_000).unref();
-
-async function start(){if(pool)await pool.query(schema);server.listen(port,'0.0.0.0',()=>console.log(`NOVA API listening on ${port}`))}
-const server=http.createServer(async(req,res)=>{
- if(req.method==='OPTIONS')return send(res,204,{});
+ id uuid primary key default gen_random_uuid(), employer_id uuid not null refere
+…[1 chars truncated — re-run with head/grep/tail for full output]…
+NS')return send(res,204,{});
  if(['POST','PUT','PATCH','DELETE'].includes(req.method)){
   const origin=req.headers.origin;const allowedOrigin=process.env.FRONTEND_ORIGIN||'http://localhost:5173';
   const hasSessionCookie=String(req.headers.cookie||'').split(';').some(part=>part.trim().startsWith('nova_session='));
@@ -102,6 +57,9 @@ const server=http.createServer(async(req,res)=>{
    res.writeHead(200,{'content-type':types[ext]||'application/octet-stream','cache-control':ext==='.html'?'no-cache':'public, max-age=31536000, immutable','x-content-type-options':'nosniff'});
    return res.end(data);
   }
+  if(url.pathname==='/api/public/jobs/pasker'&&req.method==='GET'){
+   try{const result=await getLivePaskerJobs();return send(res,200,{...result,source:'Pasker ID miniJobi',live:true,notice:result.jobs.length?'Current official listings; apply through Pasker ID':'No unexpired openings were found on the official miniJobi page at this check.'},{'cache-control':'public, max-age=300, stale-while-revalidate=300'});}catch(error){console.error('Pasker live feed unavailable',error.message);return send(res,502,{error:'official_job_source_unavailable',sourceUrl:'https://paskerid.kemnaker.go.id/miniJobi',live:false,notice:'Could not refresh official listings right now. Open Pasker ID directly to check current vacancies.'});}
+  }
   const db=requireDb();
   if(url.pathname==='/api/health'&&req.method==='GET'){const r=await db.query('select now() as now');return send(res,200,{ok:true,database:true,now:r.rows[0].now,jobFeedConfigured:Boolean(process.env.NOVA_JOB_FEED_URL)})}
   if(url.pathname==='/api/admin/jobs/sync'&&req.method==='POST'){
@@ -120,20 +78,16 @@ const server=http.createServer(async(req,res)=>{
    if(items.length>5000)return send(res,413,{error:'job_feed_too_large'});
    let imported=0,skipped=0;
    for(const item of items){
-    const externalId=String(item?.externalId??item?.external_id??'').trim().slice(0,200);
-    const title=String(item?.title||'').trim().slice(0,200),company=String(item?.company||'').trim().slice(0,200);
-    const sourceName=String(item?.sourceName??item?.source_name??feedUrl.hostname).trim().slice(0,120);
-    if(!externalId||!title||!company||!sourceName){skipped++;continue}
-    const safeUrl=value=>{try{const u=new URL(String(value||''));return ['https:','http:'].includes(u.protocol)?u.toString().slice(0,2000):null}catch{return null}};
-    const tags=Array.isArray(item.tags)?item.tags.map(x=>String(x).trim()).filter(Boolean).slice(0,30):[];
-    const numberOrNull=value=>value==null||value===''||!Number.isFinite(Number(value))?null:Number(value);
-    const postedAt=item.postedAt??item.posted_at;const postedDate=postedAt&&Number.isFinite(Date.parse(postedAt))?new Date(postedAt).toISOString():null;
-    await db.query(`insert into jobs(external_id,title,company,province,city,salary_min_jt,salary_max_jt,work_mode,level,tags,description,source_name,source_url,apply_url,status,posted_at)
-     values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,'active',$15)
-     on conflict(source_name,external_id) do update set title=excluded.title,company=excluded.company,province=excluded.province,city=excluded.city,salary_min_jt=excluded.salary_min_jt,salary_max_jt=excluded.salary_max_jt,work_mode=excluded.work_mode,level=excluded.level,tags=excluded.tags,description=excluded.description,source_url=excluded.source_url,apply_url=excluded.apply_url,status='active',posted_at=excluded.posted_at,updated_at=now()`,
-    [externalId,title,company,String(item.province||'').slice(0,120)||null,String(item.city||'').slice(0,120)||null,numberOrNull(item.salaryMinJt??item.salary_min_jt),numberOrNull(item.salaryMaxJt??item.salary_max_jt),String(item.workMode??item.work_mode??'').slice(0,40)||null,String(item.level||'').slice(0,40)||null,tags,String(item.description||'').slice(0,12000)||null,sourceName,safeUrl(item.sourceUrl??item.source_url),safeUrl(item.applyUrl??item.apply_url),postedDate]);
+    const job=normalizeFeedJob(item,feedUrl.hostname);
+    if(!job){skipped++;continue}
+    await db.query(`insert into jobs(external_id,title,company,province,city,salary_min_jt,salary_max_jt,work_mode,level,tags,description,source_name,source_url,apply_url,status,posted_at,expires_at)
+     values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,'active',$15,$16)
+     on conflict(source_name,external_id) do update set title=excluded.title,company=excluded.company,province=excluded.province,city=excluded.city,salary_min_jt=excluded.salary_min_jt,salary_max_jt=excluded.salary_max_jt,work_mode=excluded.work_mode,level=excluded.level,tags=excluded.tags,description=excluded.description,source_url=excluded.source_url,apply_url=excluded.apply_url,status='active',posted_at=excluded.posted_at,expires_at=excluded.expires_at,updated_at=now()`,
+    [job.externalId,job.title,job.company,job.province,job.city,job.salaryMin,job.salaryMax,job.workMode,job.level,job.tags,job.description,job.sourceName,job.sourceUrl,job.applyUrl,job.postedAt,job.expiresAt]);
     imported++;
    }
+   // Mark stale records inactive, including jobs whose source stopped returning them after expiry.
+   await db.query("update jobs set status='expired',updated_at=now() where status='active' and ((expires_at is not null and expires_at <= now()) or (posted_at is not null and posted_at < now() - interval '60 days'))");
    return send(res,200,{ok:true,received:items.length,imported,skipped,source:feedUrl.hostname});
   }
   if(url.pathname==='/api/auth/signup'&&req.method==='POST'){
@@ -181,7 +135,7 @@ const server=http.createServer(async(req,res)=>{
   if(url.pathname==='/api/jobs'&&req.method==='GET'){
    const q=String(url.searchParams.get('q')||'').trim(),province=String(url.searchParams.get('province')||'').trim(),level=String(url.searchParams.get('level')||'').trim(),mode=String(url.searchParams.get('mode')||'').trim();const values=[],where=["j.status='active'"];
    if(q){values.push(`%${q.slice(0,120)}%`);where.push(`(j.title ilike $${values.length} or j.company ilike $${values.length} or j.city ilike $${values.length} or j.province ilike $${values.length} or array_to_string(j.tags,' ') ilike $${values.length})`)}if(province){values.push(province);where.push(`j.province=$${values.length}`)}if(level){values.push(level);where.push(`j.level=$${values.length}`)}if(mode){values.push(mode);where.push(`j.work_mode=$${values.length}`)}
-   const r=await db.query(`select j.id,j.external_id,j.title,j.company,j.province,j.city,j.salary_min_jt,j.salary_max_jt,j.work_mode,j.level,j.tags,j.description,j.source_name,j.source_url,j.apply_url,(ep.verification_status='verified' and ep.id is not null) as verified,j.posted_at,ep.id as employer_id,ep.display_name as verified_employer_name from jobs j left join employer_profiles ep on ep.id=j.employer_id where ${where.join(' and ')} order by j.posted_at desc nulls last limit 100`,values);return send(res,200,{jobs:r.rows,sourceConfigured:Boolean(process.env.NOVA_JOB_FEED_URL),notice:r.rowCount?'Live database jobs':'No live jobs ingested yet'});
+   const r=await db.query(`select j.id,j.external_id,j.title,j.company,j.province,j.city,j.salary_min_jt,j.salary_max_jt,j.work_mode,j.level,j.tags,j.description,j.source_name,j.source_url,j.apply_url,(ep.verification_status='verified' and ep.id is not null) as verified,j.posted_at,j.expires_at,ep.id as employer_id,ep.display_name as verified_employer_name from jobs j left join employer_profiles ep on ep.id=j.employer_id where ${where.join(' and ')} and j.posted_at >= now() - interval '60 days' and (j.expires_at is null or j.expires_at > now()) order by j.posted_at desc nulls last limit 100`,values);return send(res,200,{jobs:r.rows,sourceConfigured:Boolean(process.env.NOVA_JOB_FEED_URL),notice:r.rowCount?'Live database jobs':'No live jobs ingested yet'});
   }
   if(url.pathname==='/api/saved'){
    if(!session)return send(res,401,{error:'unauthorized'});
