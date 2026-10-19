@@ -12,7 +12,8 @@
     "start": "node server/index.mjs",
     "sync:jobs": "node scripts/sync-jobs.mjs",
     "test": "npm run build && node --experimental-strip-types --test tests/nova.test.mjs tests/server-smoke.test.mjs tests/job-sync.test.mjs",
-    "check": "npm run typecheck && npm test && node --check server/index.mjs"
+    "check": "npm run typecheck && npm test && node --check server/index.mjs",
+    "test:db": "node --experimental-strip-types --test tests/server-db.integration.test.mjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
