@@ -2,9 +2,11 @@ export type ApiJob = {
   id:string; external_id?:string|null; title:string; company:string; province?:string|null; city?:string|null;
   salary_min_jt?:number|null; salary_max_jt?:number|null; work_mode?:string|null; level?:string|null; tags?:string[];
   description?:string|null; source_name?:string|null; source_url?:string|null; apply_url?:string|null; verified?:boolean; posted_at?:string|null;
+  employer_id?:string|null; verified_employer_name?:string|null;
 };
 export type ApiProfile={id:string;email:string;name?:string|null;emailVerified:boolean;skills:string[];preferredModes:string[];preferredProvinces:string[];targetLevels:string[];minimumSalaryJt:number};
 export type ApiApplication={id:string;job_id:string;status:string;applied_at?:string|null;notes?:string|null;title?:string;company?:string;city?:string;province?:string;level?:string;work_mode?:string;apply_url?:string|null};
+export type ApiEmployer={id:string;legalName:string;displayName:string;website?:string|null;businessEmail?:string|null;businessRegistration?:string|null;verificationStatus:'pending'|'verified'|'rejected';verificationNotes?:string|null;verifiedAt?:string|null;createdAt:string;updatedAt:string};
 const API_BASE=(import.meta.env.VITE_API_BASE_URL||'').replace(/\/$/,'');
 const TOKEN_KEY='nova.auth.token';
 export const getAuthToken=()=>localStorage.getItem(TOKEN_KEY);
@@ -24,4 +26,6 @@ export function saveJob(jobId:string){return request<{ok:true}>('/api/saved',{me
 export function removeSavedJob(jobId:string){return request<{ok:true}>(`/api/saved?jobId=${encodeURIComponent(jobId)}`,{method:'DELETE'});}
 export function getApplications(){return request<{applications:ApiApplication[]}>('/api/applications');}
 export function createApplication(jobId:string,notes?:string){return request<{application:ApiApplication}>('/api/applications',{method:'POST',body:JSON.stringify({jobId,notes,status:'applied'})});}
+export function getMyEmployers(){return request<{employers:ApiEmployer[]}>('/api/employers/me');}
+export function submitEmployerVerification(input:{legalName:string;displayName?:string;website?:string;businessEmail?:string;businessRegistration?:string}){return request<{employer:Pick<ApiEmployer,'id'|'legalName'|'displayName'|'website'|'verificationStatus'>}>('/api/employers',{method:'POST',body:JSON.stringify(input)});}
 export function healthCheck(){return request<{ok:boolean;database:boolean;now:string;jobFeedConfigured:boolean}>('/api/health');}
