@@ -4,7 +4,7 @@ NOVA is a separate career platform built from scratch. It does not reuse the old
 
 ## Current product capabilities
 
-- PostgreSQL-backed accounts and sessions
+- PostgreSQL-backed accounts and sessions, with dedicated sign-in/sign-up UI using server-issued HttpOnly cookies
 - Personalized career matching with explainable fit signals
 - Job discovery, filters, saved roles, and application tracking
 - Career insights, roadmap generation, and salary intelligence from available job-market rows
@@ -60,7 +60,7 @@ GitHub Actions run: https://github.com/kitasupport21-hash/KITA/actions/runs/3922
 - A separate scheduled runner configured and tested; its code exists but the service has not been created
 - Production HTTPS/domain, CORS, cookies, backups, monitoring, and rollback procedure verified
 - A reviewed operator/admin workflow before employer verification can be approved
-- Database-backed end-to-end tests against a disposable PostgreSQL instance
+- Automated PostgreSQL-backed end-to-end workflow tests in CI; the target production database still needs a final environment-specific smoke test
 - Manual QA of signup/login, job discovery, saved jobs, applications, notifications, and employer submission on the actual target deployment
 
 NOVA deliberately does not ship fabricated job listings or automatically mark employers as verified. Public-source discovery and imported database listings are presented separately. Government announcements are a monitored subset, not a complete feed for every Indonesian ministry and local government.
