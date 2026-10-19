@@ -1,27 +1,44 @@
-import { useMemo, useState } from 'react';
-import { Bell, BriefcaseBusiness, Compass, Heart, MapPin, MessageCircle, Search, Sparkles, UserRound } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { ArrowRight, Bell, BriefcaseBusiness, Check, ChevronRight, Compass, Heart, MapPin, Menu, MessageCircle, Search, Sparkles, Target, UserRound, X, Zap } from 'lucide-react';
 
-const jobs = [
-  { title: 'Product Designer', company: 'Orbit Labs', location: 'Jakarta · Hybrid', salary: 'Rp 12–18 jt', match: 96 },
-  { title: 'Frontend Engineer', company: 'Nusantara Digital', location: 'Bandung · Remote', salary: 'Rp 15–22 jt', match: 93 },
-  { title: 'Growth Marketing Lead', company: 'Loka Commerce', location: 'Jakarta · On-site', salary: 'Rp 14–20 jt', match: 89 },
+type Job = { title:string; company:string; city:string; salary:string; mode:string; match:number; tags:string[]; logo:string };
+const jobs: Job[] = [
+  {title:'Product Designer',company:'Nusa Digital',city:'Jakarta',salary:'Rp 12–18 jt',mode:'Hybrid',match:96,tags:['Figma','Product','Senior'],logo:'ND'},
+  {title:'Frontend Engineer',company:'Arunika Labs',city:'Bandung',salary:'Rp 10–16 jt',mode:'Remote',match:93,tags:['React','TypeScript','Mid'],logo:'AL'},
+  {title:'Growth Marketing Lead',company:'RuangKarya',city:'Jakarta',salary:'Rp 14–22 jt',mode:'Hybrid',match:89,tags:['Growth','B2C','Lead'],logo:'RK'},
+  {title:'Data Analyst',company:'Sagara Tech',city:'Surabaya',salary:'Rp 8–13 jt',mode:'On-site',match:84,tags:['SQL','Python','Analytics'],logo:'ST'},
 ];
 
-export default function App() {
-  const [query, setQuery] = useState('');
-  const [saved, setSaved] = useState<string[]>([]);
-  const [active, setActive] = useState('Discover');
-  const filtered = useMemo(() => jobs.filter(j => `${j.title} ${j.company} ${j.location}`.toLowerCase().includes(query.toLowerCase())), [query]);
-  return <div className="nova-shell">
-    <header className="topbar"><div className="brand"><span className="brand-mark">N</span><span>NOVA</span></div><div className="top-actions"><button><MessageCircle size={20}/></button><button><Bell size={20}/><i/></button><button className="avatar"><UserRound size={18}/></button></div></header>
-    <main>
-      <section className="hero"><div><p className="eyebrow"><Sparkles size={15}/> CAREER INTELLIGENCE</p><h1>Find work that<br/><em>fits your future.</em></h1><p className="hero-copy">NOVA understands your skills, goals and preferences to surface opportunities worth your time.</p></div><div className="hero-orb"><div className="orb-core">N</div><span>AI<br/>MATCH</span></div></section>
-      <section className="search-panel"><Search size={21}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Role, skill, company..."/><button>Search</button></section>
-      <div className="quick-row"><button>Remote</button><button>Full-time</button><button>Entry level</button><button>Salary ↑</button></div>
-      <section className="section-head"><div><p className="eyebrow">CURATED FOR YOU</p><h2>Top opportunities</h2></div><button className="see-all">View all</button></section>
-      <section className="job-grid">{filtered.map(job=><article className="job-card" key={job.title}><div className="job-top"><div className="company-icon">{job.company[0]}</div><button onClick={()=>setSaved(s=>s.includes(job.title)?s.filter(x=>x!==job.title):[...s,job.title])}><Heart size={19} fill={saved.includes(job.title)?'currentColor':'none'}/></button></div><div className="match">{job.match}% match</div><h3>{job.title}</h3><p className="company">{job.company}</p><p className="meta"><MapPin size={15}/>{job.location}</p><div className="job-bottom"><strong>{job.salary}</strong><span>View role →</span></div></article>)}</section>
-      <section className="insight"><div className="insight-icon"><Sparkles size={22}/></div><div><p className="eyebrow">NOVA INSIGHT</p><h3>Your profile is 82% ready</h3><p>Add two skills and a project to unlock more high-match roles.</p></div><button>Improve profile</button></section>
-    </main>
-    <nav className="bottom-nav">{[['Discover',Compass],['Applications',BriefcaseBusiness],['Saved',Heart],['Profile',UserRound]].map(([name,Icon])=><button className={active===name?'active':''} onClick={()=>setActive(name as string)} key={name as string}><Icon size={20}/><span>{name}</span></button>)}</nav>
-  </div>;
+export default function App(){
+ const [tab,setTab]=useState('home'); const [query,setQuery]=useState(''); const [liked,setLiked]=useState<string[]>([]); const [menu,setMenu]=useState(false); const [selected,setSelected]=useState<Job|null>(null);
+ const filtered=useMemo(()=>jobs.filter(j=>(j.title+' '+j.company+' '+j.city+' '+j.tags.join(' ')).toLowerCase().includes(query.toLowerCase())),[query]);
+ const nav=(id:string)=>{setTab(id);setSelected(null);setMenu(false)};
+ return <div className="nova-shell">
+  <aside className={menu?'sidebar open':'sidebar'}>
+   <div className="brand"><div className="brand-mark"><Sparkles size={19}/></div><span>NOVA</span></div>
+   <button className={tab==='home'?'nav active':'nav'} onClick={()=>nav('home')}><Compass size={19}/>Overview</button>
+   <button className={tab==='discover'?'nav active':'nav'} onClick={()=>nav('discover')}><Search size={19}/>Discover</button>
+   <button className={tab==='saved'?'nav active':'nav'} onClick={()=>nav('saved')}><Heart size={19}/>Saved</button>
+   <button className={tab==='applications'?'nav active':'nav'} onClick={()=>nav('applications')}><BriefcaseBusiness size={19}/>Applications</button>
+   <button className={tab==='profile'?'nav active':'nav'} onClick={()=>nav('profile')}><UserRound size={19}/>My profile</button>
+   <div className="side-spacer"/><div className="side-card"><Sparkles size={17}/><b>Career AI</b><p>Get a smarter path to your next role.</p><button onClick={()=>nav('discover')}>Explore <ArrowRight size={14}/></button></div>
+  </aside>
+  <main className="main">
+   <header><button className="mobile-menu" onClick={()=>setMenu(!menu)}><Menu/></button><div><span className="eyebrow">YOUR CAREER OS</span><h1>{tab==='home'?'Good morning 👋':tab==='discover'?'Discover opportunities':tab==='saved'?'Your saved roles':tab==='applications'?'Application tracker':'Your career profile'}</h1></div><div className="header-actions"><button className="icon-btn"><Bell size={19}/><i/></button><div className="avatar">DK</div></div></header>
+   {tab==='home' && <>
+    <section className="hero"><div className="hero-copy"><span className="pill"><Zap size={14}/> AI-powered matching</span><h2>Find work that fits <em>you.</em></h2><p>NOVA learns what you want, then brings the strongest opportunities to you.</p><div className="search-box"><Search size={19}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Role, skill, company or keyword"/><button onClick={()=>setTab('discover')}>Search</button></div><div className="quick"><span>Try:</span>{['Product Designer','Remote','React','Jakarta'].map(x=><button key={x} onClick={()=>{setQuery(x);setTab('discover')}}>{x}</button>)}</div></div><div className="hero-orb"><div className="orb-core"><Sparkles size={34}/></div><div className="orbit o1"/><div className="orbit o2"/><div className="orbit o3"/></div></section>
+    <div className="section-head"><div><span className="eyebrow">PERSONALIZED FOR YOU</span><h3>Top matches</h3></div><button onClick={()=>setTab('discover')}>View all <ArrowRight size={16}/></button></div>
+    <div className="job-grid">{jobs.slice(0,3).map(j=><JobCard key={j.title} job={j} liked={liked.includes(j.title)} onLike={()=>setLiked(l=>l.includes(j.title)?l.filter(x=>x!==j.title):[...l,j.title])} onOpen={()=>setSelected(j)}/>)}</div>
+    <section className="insight"><div className="insight-icon"><Target size={22}/></div><div><span className="eyebrow">CAREER INSIGHT</span><h3>Your profile is 82% ready</h3><p>Add 2 skills and a portfolio link to unlock more high-match opportunities.</p></div><button onClick={()=>setTab('profile')}>Improve profile <ChevronRight size={17}/></button></section>
+   </>}
+   {tab==='discover' && <><div className="discover-bar"><div className="search-box"><Search size={19}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search roles, skills or companies"/></div><button className="filter">Filters</button></div><div className="chips">{['All','Remote','Hybrid','Jakarta','Bandung','Tech','Design'].map(x=><button key={x}>{x}</button>)}</div><div className="section-head"><div><span className="eyebrow">{filtered.length} OPPORTUNITIES</span><h3>Recommended roles</h3></div><span className="sort">Best match ▾</span></div><div className="job-list">{filtered.map(j=><JobCard key={j.title} job={j} liked={liked.includes(j.title)} onLike={()=>setLiked(l=>l.includes(j.title)?l.filter(x=>x!==j.title):[...l,j.title])} onOpen={()=>setSelected(j)}/>)}</div></>}
+   {tab==='saved' && <><div className="section-head"><div><span className="eyebrow">BOOKMARKED</span><h3>Roles you want to revisit</h3></div></div><div className="job-list">{jobs.filter(j=>liked.includes(j.title)).map(j=><JobCard key={j.title} job={j} liked onLike={()=>setLiked(l=>l.filter(x=>x!==j.title))} onOpen={()=>setSelected(j)}/>)}</div>{liked.length===0&&<Empty title="Nothing saved yet" text="Tap the heart on a role you like and it will appear here."/>}</>}
+   {tab==='applications' && <div className="panel"><div className="tracker"><div className="tracker-top"><div><span className="eyebrow">LIVE TRACKER</span><h3>3 active applications</h3></div><span className="status-dot">On track</span></div>{['Product Designer · Nusa Digital','Frontend Engineer · Arunika Labs','Growth Marketing Lead · RuangKarya'].map((x,i)=><div className="application" key={x}><div className="step-num">{i+1}</div><div><b>{x}</b><p>{['Interview scheduled','Application under review','Application sent'][i]}</p></div><span>{['Today','2 days','5 days'][i]}</span></div>)}</div></div>}
+   {tab==='profile' && <div className="profile-grid"><div className="profile-card"><div className="profile-avatar">DK</div><h2>Your profile</h2><p>Product • Design • Technology</p><div className="progress"><span style={{width:'82%'}}/></div><b>82% complete</b><button onClick={()=>alert('Profile editor coming next')}>Edit profile <ArrowRight size={16}/></button></div><div className="panel"><span className="eyebrow">YOUR SIGNALS</span><h3>What NOVA knows about you</h3>{['Product design','React & TypeScript','Remote-friendly','Senior level'].map(x=><div className="signal" key={x}><Check size={16}/>{x}</div>)}</div></div>}
+   <footer><span>© 2026 NOVA</span><span>Intelligent career platform</span></footer>
+  </main>
+  {selected&&<div className="modal-backdrop" onClick={()=>setSelected(null)}><div className="job-modal" onClick={e=>e.stopPropagation()}><button className="close" onClick={()=>setSelected(null)}><X/></button><div className="logo-big">{selected.logo}</div><span className="match">{selected.match}% match</span><h2>{selected.title}</h2><p className="company">{selected.company} · {selected.city}</p><div className="modal-meta"><span>{selected.salary}</span><span>{selected.mode}</span><span>Full-time</span></div><h3>Why this matches you</h3><p className="muted">NOVA matched this role using your skills, preferred work style and career direction.</p><div className="tags">{selected.tags.map(t=><span key={t}>{t}</span>)}</div><button className="apply" onClick={()=>alert('Application flow is the next build step')}>Start application <ArrowRight size={17}/></button></div></div>}
+ </div>
 }
+function JobCard({job,liked,onLike,onOpen}:{job:Job;liked:boolean;onLike:()=>void;onOpen:()=>void}){return <article className="job-card" onClick={onOpen}><div className="job-top"><div className="job-logo">{job.logo}</div><button className={liked?'heart liked':'heart'} onClick={e=>{e.stopPropagation();onLike()}}><Heart size={18} fill={liked?'currentColor':'none'}/></button></div><span className="match">{job.match}% match</span><h3>{job.title}</h3><p className="company">{job.company}</p><p className="location"><MapPin size={14}/>{job.city} · {job.mode}</p><div className="job-bottom"><b>{job.salary}</b><ChevronRight size={17}/></div></article>}
+function Empty({title,text}:{title:string;text:string}){return <div className="empty"><Heart size={28}/><h3>{title}</h3><p>{text}</p></div>}
