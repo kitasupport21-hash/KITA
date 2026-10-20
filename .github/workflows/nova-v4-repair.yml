@@ -19,11 +19,10 @@ jobs:
           from pathlib import Path
           p=Path('src/App.tsx')
           s=p.read_text()
-          s=s.replace("'Best streak':'Best streak','Budget bulan ini'", "'Best streak':'Best streak','Budget bulan ini'")
-          s=s.replace("'Kebiasaan':'Habits','Catatan':'Notes','Pengaturan':'Settings','Otomasi':'Automations','Insight':'Insights','Halo':'Hello','Mode terang'", "'Kebiasaan':'Habits','Catatan':'Notes','Pengaturan':'Settings','Otomasi':'Automations','Insight':'Insights','Halo':'Hello','Mode terang'")
+          s=s.replace("'Hari ini':'Today','Kebiasaan':'Habits','New task'", "'Hari ini':'Today','New task'")
+          s=s.replace("setBills(v=>[...v,", "setBills((v:Bill[])=>[...v,")
           p.write_text(s)
-          a=Path('src/AuthGate.tsx')
-          a.write_text("import App from './App';\nexport default function AuthGate(){return <App/>}\n")
+          Path('src/AuthGate.tsx').write_text("import App from './App';\nexport default function AuthGate(){return <App/>}\n")
           PY
       - run: npm install
       - run: npm run typecheck
