@@ -1,2 +1,19 @@
 {
-  "name":"NOVA Daily","short_name":"NOVA","description":"NOVA Daily — personal life management untuk planner, uang, kebiasaan, target, catatan dan fokus.","lang":"id-ID","start_url":"/","scope":"/","display":"standalone","background_color":"#07111F","theme_color":"#07111F","orientation":"portrait-primary","icons":[{"src":"/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]}
+  "name":"NOVA Life OS",
+  "short_name":"NOVA",
+  "description":"NOVA Life OS — planner, calendar, money, goals, habits, notes, focus and automation.",
+  "lang":"id-ID",
+  "start_url":"/",
+  "scope":"/",
+  "display":"standalone",
+  "background_color":"#07111F",
+  "theme_color":"#07111F",
+  "orientation":"portrait-primary",
+  "icons":[{"src":"/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}],
+  "shortcuts":[
+    {"name":"New Task","short_name":"Task","url":"/?quick=task","icons":[{"src":"/icon.svg","sizes":"any"}]},
+    {"name":"New Note","short_name":"Note","url":"/?quick=note","icons":[{"src":"/icon.svg","sizes":"any"}]},
+    {"name":"Focus Mode","short_name":"Focus","url":"/?quick=focus","icons":[{"src":"/icon.svg","sizes":"any"}]},
+    {"name":"Money","short_name":"Money","url":"/?quick=money","icons":[{"src":"/icon.svg","sizes":"any"}]}
+  ]
+}
