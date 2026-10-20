@@ -1,12 +1,15 @@
 {
-  "name": "KITA - Kerja Indonesia Terpercaya",
-  "short_name": "KITA",
-  "description": "Platform pencarian kerja Indonesia dengan lowongan dan lamaran yang lebih aman.",
+  "name": "NOVA Daily",
+  "short_name": "NOVA",
+  "description": "NOVA Daily — personal life management untuk planner, uang, kebiasaan, target, catatan dan fokus.",
+  "lang": "id-ID",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#0b0b0f",
-  "theme_color": "#0b0b0f",
+  "background_color": "#07111F",
+  "theme_color": "#07111F",
+  "orientation": "portrait-primary",
   "icons": [
-    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+    {"src":"/nova-icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
   ]
 }
