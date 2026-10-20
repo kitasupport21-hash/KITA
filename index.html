@@ -11,9 +11,38 @@
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <title>NOVA Daily — Asisten Harian Indonesia</title>
+    <style>
+      @media (max-width:700px){
+        body{padding-bottom:92px!important}
+        #mobileNav{position:fixed;left:10px;right:10px;bottom:10px;z-index:99999;display:grid;grid-template-columns:repeat(6,1fr);gap:4px;padding:7px;border:1px solid rgba(255,255,255,.10);background:rgba(10,17,27,.95);backdrop-filter:blur(18px);border-radius:18px;box-shadow:0 12px 40px rgba(0,0,0,.55);padding-bottom:max(7px,env(safe-area-inset-bottom))}
+        #mobileNav button{min-width:0;border:0;background:transparent;color:#71859c;border-radius:12px;padding:8px 2px 7px;display:flex;flex-direction:column;align-items:center;gap:4px;font:800 8px/1 system-ui,sans-serif}
+        #mobileNav button.active{color:#07131b;background:#68e1fa}
+        #mobileNav button .mi{font-size:18px;line-height:1}
+        #mobileLang{position:fixed;right:64px;top:18px;z-index:100000;border:1px solid rgba(255,255,255,.12);background:rgba(10,17,27,.94);color:#8fe8fa;border-radius:11px;padding:9px 11px;font:900 10px system-ui,sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+      }
+      @media (min-width:701px){#mobileNav,#mobileLang{display:none}}
+    </style>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      (()=>{
+        const items=[['home','⌂','Home','Beranda',0],['planner','☷','Planner','Planner',2],['money','₹','Money','Keuangan',3],['goals','◎','Goals','Target',4],['notes','▤','Notes','Catatan',6],['focus','◷','Timer','Timer',7]];
+        const labels=()=>localStorage.getItem('nova4.lang')==='en';
+        function install(){
+          if(window.innerWidth>700||document.getElementById('mobileNav'))return;
+          const nav=document.createElement('nav');nav.id='mobileNav';nav.setAttribute('aria-label','Mobile navigation');
+          const en=labels();
+          items.forEach(([id,icon,a,b,index])=>{const btn=document.createElement('button');btn.dataset.tab=id;btn.innerHTML=`<span class="mi">${icon}</span><span>${en?a:b}</span>`;btn.onclick=()=>{const targets=document.querySelectorAll('aside nav button');const target=targets[index];if(target){target.click();setTimeout(sync,30)}};nav.appendChild(btn)});
+          document.body.appendChild(nav);
+          const lang=document.createElement('button');lang.id='mobileLang';lang.textContent=en?'ID':'EN';lang.title=en?'Switch to Bahasa Indonesia':'Switch to English';lang.onclick=()=>{const buttons=document.querySelectorAll('.sideBottom button');const target=buttons[buttons.length-1];if(target)target.click()};document.body.appendChild(lang);
+          const observer=new MutationObserver(sync);observer.observe(document.getElementById('root'),{subtree:true,childList:true});window.addEventListener('resize',()=>location.reload());
+          sync();
+        }
+        function sync(){const buttons=document.querySelectorAll('aside nav button');items.forEach(([id,, , ,index])=>{document.querySelector(`#mobileNav button[data-tab="${id}"]`)?.classList.toggle('active',!!buttons[index]?.classList.contains('active'))})}
+        if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
+      })();
+    </script>
   </body>
 </html>
