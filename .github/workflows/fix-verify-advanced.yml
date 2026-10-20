@@ -1,0 +1,46 @@
+name: Fix and verify advanced NOVA
+
+on:
+  push:
+    branches: [nova-mobile-bottom-nav]
+
+jobs:
+  fix-and-test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: nova-mobile-bottom-nav
+
+      - name: Fix mobile navigation typing
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('src/App.tsx')
+          s=p.read_text()
+          old="{[['home','Home',Home],['planner','Planner',ListTodo],['money','Money',Wallet],['goals','Goals',Target],['notes','Notes',Edit3],['focus','Timer',Clock]].map(([id,label,I])=>"
+          new="{([['home','Home',Home],['planner','Planner',ListTodo],['money','Money',Wallet],['goals','Goals',Target],['notes','Notes',Edit3],['focus','Timer',Clock]] as [Tab,string,any][]).map(([id,label,I])=>"
+          if old in s:
+              p.write_text(s.replace(old,new,1))
+          PY
+
+      - name: Install
+        run: npm install
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Production build
+        run: npm run build
+
+      - name: Commit fix
+        run: |
+          if git diff --quiet; then
+            echo "No source fix needed"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add src/App.tsx
+            git commit -m "fix: type mobile navigation icons"
+            git push origin nova-mobile-bottom-nav
+          fi
