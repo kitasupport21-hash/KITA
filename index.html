@@ -4,13 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#07111F" />
-    <meta name="description" content="NOVA Daily — personal life management untuk uang, planner, kebiasaan, target, catatan dan fokus." />
+    <meta name="description" content="Ani Sani — personal life management untuk uang, planner, kebiasaan, target, catatan dan fokus." />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
-    <title>NOVA Daily — Asisten Harian Indonesia</title>
+    <title>Ani Sani — Personal Life OS</title>
     <style>
       @media (max-width:700px){
         body{padding-bottom:92px!important}
@@ -43,6 +43,8 @@
         function sync(){const buttons=document.querySelectorAll('aside nav button');items.forEach(([id,, , ,index])=>{document.querySelector(`#mobileNav button[data-tab="${id}"]`)?.classList.toggle('active',!!buttons[index]?.classList.contains('active'))})}
         if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
       })();
+      // Keep the existing internal storage/API keys stable while presenting the new product name.
+      (()=>{const replace=()=>{const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);const nodes=[];let n;while(n=walker.nextNode())nodes.push(n);for(const x of nodes){if(x.nodeValue&&/\bNOVA\b/.test(x.nodeValue))x.nodeValue=x.nodeValue.replace(/\bNOVA\b/g,'Ani Sani')}};const run=()=>{replace();setTimeout(replace,50)};new MutationObserver(run).observe(document.body,{subtree:true,childList:true,characterData:true});if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run);else run()})();
     </script>
   </body>
 </html>
