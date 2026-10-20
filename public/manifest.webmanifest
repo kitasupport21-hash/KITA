@@ -1,7 +1,7 @@
 {
-  "name":"NOVA Life OS",
-  "short_name":"NOVA",
-  "description":"NOVA Life OS — planner, calendar, money, goals, habits, notes, focus and automation.",
+  "name":"Ani Sani",
+  "short_name":"Ani Sani",
+  "description":"Ani Sani — personal life management for planner, calendar, money, goals, habits, notes and focus.",
   "lang":"id-ID",
   "start_url":"/",
   "scope":"/",
@@ -13,7 +13,7 @@
   "shortcuts":[
     {"name":"New Task","short_name":"Task","url":"/?quick=task","icons":[{"src":"/icon.svg","sizes":"any"}]},
     {"name":"New Note","short_name":"Note","url":"/?quick=note","icons":[{"src":"/icon.svg","sizes":"any"}]},
-    {"name":"Focus Mode","short_name":"Focus","url":"/?quick=focus","icons":[{"src":"/icon.svg","sizes":"any"}]},
+    {"name":"Focus Timer","short_name":"Timer","url":"/?quick=focus","icons":[{"src":"/icon.svg","sizes":"any"}]},
     {"name":"Money","short_name":"Money","url":"/?quick=money","icons":[{"src":"/icon.svg","sizes":"any"}]}
   ]
 }
