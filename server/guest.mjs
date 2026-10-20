@@ -6,7 +6,17 @@ const port = Number(process.env.PORT || 10000);
 const staticDir = path.resolve(process.cwd(), 'dist');
 const FEED_URL = 'https://locojob.com/api/public/v1/jobs';
 const CACHE_MS = 10 * 60 * 1000;
-let cache = { at: 0, jobs: [] };
+const MAX_PAGES = 10;
+const PER_PAGE = 20;
+const STREAMS = [
+  '',
+  'software technology IT',
+  'sales marketing customer service',
+  'finance accounting administration',
+  'hospitality hotel restaurant retail',
+  'engineering manufacturing logistics operator',
+];
+let cache = { at: 0, jobs: [], refreshing: false, sourceCount: 0 };
 let loading = null;
 
 const json = (res, status, data) => {
@@ -49,18 +59,26 @@ function normalize(item, index) {
     ? [number(item.salary_min), number(item.salary_max)]
     : parseSalary(item.salary ?? item.pay ?? item.salary_range ?? item.compensation);
   const title = first(item.title, item.name, 'Open role');
-  const company = first(item.company, item.company_name, item.employer?.name, item.hiring?.name, item.hiring?.company, item.hiring?.type === 'agency' ? 'Confidential employer' : '', 'Hiring company');
+  const isAgency = item.hiring?.type === 'agency';
+  const company = isAgency
+    ? 'Confidential employer'
+    : first(item.company, item.company_name, item.employer?.name, item.hiring?.name, item.hiring?.company, 'Hiring company');
   const jobUrl = safeUrl(item.url ?? item.job_url ?? item.link ?? item.guid);
   const applyUrl = safeUrl(item.apply_url ?? item.application_url ?? item.applicationLink ?? item.application_link) || jobUrl;
   const skills = Array.isArray(item.skills) ? item.skills : Array.isArray(item.tags) ? item.tags : [];
   const workMode = first(item.work_mode, item.workMode, item.mode, item.remote ? 'Remote' : '', 'On-site');
   const level = first(item.level, item.seniority, item.experience_level, item.experience, item.fresher ? 'Beginner' : '', 'Beginner');
   const created = item.created_at || item.posted_at || item.postedAt || item.createdAt;
-  const postedAt = created ? (Number.isFinite(Number(created)) ? new Date(Number(created) * 1000).toISOString() : new Date(created).toISOString()) : new Date().toISOString();
-  const id = first(item.id, item.job_id, item.slug, jobUrl, `${title}-${company}-${index}`).replace(/[^a-zA-Z0-9_-]/g, '-').slice(0, 180);
+  let postedAt = new Date().toISOString();
+  if (created) {
+    const parsed = Number.isFinite(Number(created)) ? new Date(Number(created) * 1000) : new Date(created);
+    if (!Number.isNaN(parsed.getTime())) postedAt = parsed.toISOString();
+  }
+  const rawId = first(item.id, item.job_id, item.slug, jobUrl, `${title}-${company}-${index}`);
+  const id = rawId.replace(/[^a-zA-Z0-9_-]/g, '-').slice(0, 180);
   return {
     id,
-    external_id: id,
+    external_id: rawId,
     title,
     company,
     province: first(item.province, item.state, item.region, 'Indonesia'),
@@ -71,7 +89,7 @@ function normalize(item, index) {
     level,
     tags: skills.map(text).filter(Boolean).slice(0, 20),
     description: first(item.description, item.summary, item.excerpt),
-    source_name: 'LocoJobs',
+    source_name: 'NOVA Job API',
     source_url: jobUrl || 'https://locojob.com',
     apply_url: applyUrl,
     verified: false,
@@ -79,32 +97,83 @@ function normalize(item, index) {
   };
 }
 
-async function fetchPage(page) {
+async function fetchPage(page, query = '') {
   const url = new URL(FEED_URL);
   url.searchParams.set('page', String(page));
-  url.searchParams.set('per_page', '20');
-  const response = await fetch(url, { headers: { accept: 'application/json', 'user-agent': 'NOVA-career-platform/1.0' }, signal: AbortSignal.timeout(15000) });
+  url.searchParams.set('per_page', String(PER_PAGE));
+  if (query) url.searchParams.set('q', query);
+  const response = await fetch(url, {
+    headers: { accept: 'application/json', 'user-agent': 'NOVA-job-api/2.0' },
+    signal: AbortSignal.timeout(15000),
+  });
   if (!response.ok) throw new Error(`job_feed_${response.status}`);
   const payload = await response.json();
   return Array.isArray(payload) ? payload : (payload.jobs || payload.data || []);
 }
 
-async function loadJobs() {
-  if (Date.now() - cache.at < CACHE_MS && cache.jobs.length) return cache.jobs;
+async function fetchStream(query) {
+  const all = [];
+  for (let page = 1; page <= MAX_PAGES; page += 1) {
+    const batch = await fetchPage(page, query);
+    all.push(...batch);
+    if (batch.length < PER_PAGE) break;
+  }
+  return all;
+}
+
+function dedupeJobs(items) {
+  const seen = new Map();
+  for (const job of items) {
+    const key = first(job.external_id, job.apply_url, `${job.title}|${job.company}|${job.city}`).toLowerCase();
+    if (!key) continue;
+    const existing = seen.get(key);
+    if (!existing || new Date(job.posted_at).getTime() > new Date(existing.posted_at).getTime()) seen.set(key, job);
+  }
+  return [...seen.values()].sort((a, b) => new Date(b.posted_at).getTime() - new Date(a.posted_at).getTime());
+}
+
+async function refreshJobs() {
   if (loading) return loading;
   loading = (async () => {
-    const all = [];
-    for (let page = 1; page <= 10; page += 1) {
-      const batch = await fetchPage(page);
-      all.push(...batch);
-      if (batch.length < 20) break;
-    }
-    const jobs = all.map(normalize).filter(j => j.apply_url || j.source_url);
-    cache = { at: Date.now(), jobs };
-    return jobs;
-  })().finally(() => { loading = null; });
+    const results = await Promise.allSettled(STREAMS.map(fetchStream));
+    const raw = results.flatMap(r => r.status === 'fulfilled' ? r.value : []);
+    const jobs = dedupeJobs(raw.map(normalize).filter(j => j.apply_url || j.source_url));
+    if (jobs.length) cache = { at: Date.now(), jobs, refreshing: false, sourceCount: STREAMS.length };
+    else if (!cache.jobs.length) throw new Error('job_feed_empty');
+    return cache.jobs;
+  })().catch((error) => {
+    cache = { ...cache, refreshing: false };
+    if (cache.jobs.length) return cache.jobs;
+    throw error;
+  }).finally(() => { loading = null; });
   return loading;
 }
+
+async function loadJobs() {
+  if (cache.jobs.length && Date.now() - cache.at < CACHE_MS) return cache.jobs;
+  return refreshJobs();
+}
+
+// Keep NOVA's API cache warm in the background. The frontend never needs to call the upstream feed directly.
+setInterval(() => {
+  if (cache.jobs.length && Date.now() - cache.at >= CACHE_MS && !loading) refreshJobs().catch(() => {});
+}, CACHE_MS).unref();
+
+const filterJobs = (jobs, url) => {
+  let result = jobs;
+  const q = text(url.searchParams.get('q')).toLowerCase();
+  const city = text(url.searchParams.get('city')).toLowerCase();
+  const mode = text(url.searchParams.get('mode')).toLowerCase();
+  const level = text(url.searchParams.get('level')).toLowerCase();
+  const source = text(url.searchParams.get('source')).toLowerCase();
+  const limit = Math.min(Math.max(Number(url.searchParams.get('limit')) || 100, 1), 1000);
+  if (q) result = result.filter(j => `${j.title} ${j.company} ${j.city} ${j.province} ${j.description} ${j.tags.join(' ')}`.toLowerCase().includes(q));
+  if (city) result = result.filter(j => `${j.city} ${j.province}`.toLowerCase().includes(city));
+  if (mode) result = result.filter(j => j.work_mode.toLowerCase().includes(mode));
+  if (level) result = result.filter(j => j.level.toLowerCase().includes(level));
+  if (source) result = result.filter(j => j.source_name.toLowerCase().includes(source));
+  return result.slice(0, limit);
+};
 
 async function serveStatic(req, res) {
   let requestedPath;
@@ -129,23 +198,47 @@ const server = http.createServer(async (req, res) => {
   try {
     if (req.method === 'OPTIONS') return json(res, 204, {});
     const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
+
     if (url.pathname === '/api/health' && req.method === 'GET') {
-      let count = cache.jobs.length;
-      try { count = (await loadJobs()).length; } catch { /* health stays useful even if upstream is temporarily unavailable */ }
-      return json(res, 200, { ok: true, database: false, databaseRequired: false, jobFeedConfigured: true, jobsAvailable: count, source: 'LocoJobs' });
+      let jobs = cache.jobs;
+      try { jobs = await loadJobs(); } catch { /* last known health remains useful */ }
+      return json(res, 200, {
+        ok: true,
+        database: false,
+        databaseRequired: false,
+        jobFeedConfigured: true,
+        jobsAvailable: jobs.length,
+        source: 'NOVA Job API',
+        upstream: 'LocoJobs',
+        cachedAt: cache.at ? new Date(cache.at).toISOString() : null,
+      });
     }
+
     if (url.pathname === '/api/jobs' && req.method === 'GET') {
-      let jobs = await loadJobs();
-      const q = text(url.searchParams.get('q')).toLowerCase();
-      const city = text(url.searchParams.get('city')).toLowerCase();
-      const mode = text(url.searchParams.get('mode')).toLowerCase();
-      const level = text(url.searchParams.get('level')).toLowerCase();
-      if (q) jobs = jobs.filter(j => `${j.title} ${j.company} ${j.city} ${j.province} ${j.description} ${j.tags.join(' ')}`.toLowerCase().includes(q));
-      if (city) jobs = jobs.filter(j => `${j.city} ${j.province}`.toLowerCase().includes(city));
-      if (mode) jobs = jobs.filter(j => j.work_mode.toLowerCase() === mode);
-      if (level) jobs = jobs.filter(j => j.level.toLowerCase() === level);
-      return json(res, 200, { jobs, total: jobs.length, source: 'LocoJobs' });
+      const jobs = filterJobs(await loadJobs(), url);
+      return json(res, 200, { jobs, total: jobs.length, source: 'NOVA Job API', updated_at: cache.at ? new Date(cache.at).toISOString() : null });
     }
+
+    if (url.pathname.startsWith('/api/jobs/') && req.method === 'GET') {
+      const id = decodeURIComponent(url.pathname.slice('/api/jobs/'.length));
+      const jobs = await loadJobs();
+      const job = jobs.find(j => j.id === id || j.external_id === id);
+      return job ? json(res, 200, { job, source: 'NOVA Job API' }) : json(res, 404, { error: 'job_not_found' });
+    }
+
+    if (url.pathname === '/api/catalog' && req.method === 'GET') {
+      const jobs = await loadJobs();
+      const count = (values) => Object.entries(values).sort((a,b) => b[1]-a[1]).map(([name, total]) => ({ name, total }));
+      const cities = {}, provinces = {}, modes = {}, levels = {};
+      for (const j of jobs) {
+        cities[j.city] = (cities[j.city] || 0) + 1;
+        provinces[j.province] = (provinces[j.province] || 0) + 1;
+        modes[j.work_mode] = (modes[j.work_mode] || 0) + 1;
+        levels[j.level] = (levels[j.level] || 0) + 1;
+      }
+      return json(res, 200, { cities: count(cities), provinces: count(provinces), work_modes: count(modes), levels: count(levels), total_jobs: jobs.length, source: 'NOVA Job API' });
+    }
+
     if (req.method === 'GET' && !url.pathname.startsWith('/api/')) return serveStatic(req, res);
     return json(res, 404, { error: 'not_found' });
   } catch (error) {
@@ -154,4 +247,7 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(port, '0.0.0.0', () => console.log(`NOVA guest server listening on ${port}`));
+server.listen(port, '0.0.0.0', () => {
+  console.log(`NOVA guest server listening on ${port}`);
+  refreshJobs().then(jobs => console.log(`NOVA Job API warmed with ${jobs.length} jobs`)).catch(error => console.error('NOVA initial job refresh failed:', error?.message || error));
+});
