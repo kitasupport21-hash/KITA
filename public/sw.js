@@ -1,4 +1,4 @@
-const CACHE = 'nova-daily-v4';
+const CACHE = 'ani-sani-v6';
 const SHELL = ['/', '/manifest.webmanifest', '/icon.svg'];
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -15,4 +15,11 @@ self.addEventListener('fetch', (event) => {
     caches.open(CACHE).then((cache) => cache.put(event.request, copy));
     return response;
   }).catch(() => caches.match(event.request).then((cached) => cached || caches.match('/'))));
+});
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(clients.matchAll({type:'window',includeUncontrolled:true}).then((list) => {
+    const client = list.find((item) => 'focus' in item);
+    return client ? client.focus() : clients.openWindow('/');
+  }));
 });
