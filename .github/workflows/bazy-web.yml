@@ -1,0 +1,21 @@
+name: BAZY build check
+on:
+  push:
+    paths:
+      - 'bazy/**'
+      - '.github/workflows/bazy-web.yml'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bazy
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: bazy/package.json
+      - run: npm install
+      - run: npm run build
