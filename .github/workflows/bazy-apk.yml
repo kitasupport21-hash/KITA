@@ -51,6 +51,8 @@ jobs:
           test ! -f capacitor.config.ts
           node -e "const fs=require('fs'); JSON.parse(fs.readFileSync('capacitor.config.json','utf8')); console.log('Capacitor JSON config OK')"
           npx cap --version
+          echo "Config files present:"
+          ls -la capacitor.config.*
 
       - name: Build web app
         run: npm run build
