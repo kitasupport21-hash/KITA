@@ -1,0 +1,5 @@
+/* Clear phone-first placement for the two feature launchers. Keep them above the bottom navigation and side-by-side. */
+.fit-launch{z-index:1300;left:12px;right:auto;bottom:84px;min-height:48px;padding:0 16px;white-space:nowrap;}
+.futureFab{z-index:1301;right:12px;left:auto;bottom:84px;min-height:48px;}
+@media(max-width:520px){.fit-launch{left:12px;bottom:84px}.futureFab{right:12px;bottom:84px}}
+@media(min-width:700px){.fit-launch{left:auto;right:176px;bottom:24px}.futureFab{right:24px;bottom:24px}}
