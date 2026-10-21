@@ -1,20 +1,17 @@
-import {useMemo,useState} from 'react';
-import {Activity,Apple,ChevronDown,ChevronUp,Dumbbell,HeartPulse,Info,ShieldCheck,Utensils,X,Play,Pause,RotateCcw} from 'lucide-react';
+import {useEffect,useMemo,useState} from 'react';
+import {Activity,Apple,ChevronUp,Dumbbell,HeartPulse,Info,ShieldCheck,Utensils,X,Play,Pause,RotateCcw} from 'lucide-react';
 
 const plans={
  low:{title:'Fat loss / healthier body composition',items:[['Cardio','Brisk walking, cycling, dancing or jogging — build gradually.'],['Strength','Squats, lunges, push-ups, rows and glute bridges 2+ days/week.'],['Core','Plank, dead bug and bird-dog for core strength; spot-reducing belly fat is not possible.'],['Food','Vegetables, fruit, pulses, whole grains and a protein source at meals.'],['Limit','Sugary drinks, frequent fried/ultra-processed snacks and oversized portions.']]},
  gain:{title:'Healthy weight / body-fat gain',items:[['Training','Strength training with progressive resistance is preferred for building muscle.'],['Food','Add nutritious energy-dense foods such as nuts, seeds, dairy/alternatives, eggs, pulses, rice and whole grains.'],['Protein','Include a protein source regularly: dal, beans, eggs, fish, chicken, milk/curd or suitable alternatives.'],['Routine','Eat regular balanced meals and snacks rather than relying on sweets or fast food.'],['Recovery','Sleep well and allow muscles to recover between hard sessions.']]}
 };
-
-const exercises=[
- ['Running in place / High knees','3–5 min warm-up','Cardio'],['Jumping jacks','3 × 50–60 reps','Cardio'],['Bodyweight squats','3 × 15–20 reps','Legs'],['Push-ups','3 × 10–15 reps','Upper body'],['Burpees','3 × 8–12 reps','Full body'],['Mountain climbers','3 × 20–30 reps','Core + cardio'],['Plank','3 × 30–60 sec','Core'],['Jump rope / Shadow jump','3–5 min','Cardio'],['Glute bridges','3 × 15–20 reps','Glutes'],['Stair climbing / Step-ups','5–10 min','Legs + cardio']
-];
+const exercises=[['Running in place / High knees','3–5 min warm-up','Cardio'],['Jumping jacks','3 × 50–60 reps','Cardio'],['Bodyweight squats','3 × 15–20 reps','Legs'],['Push-ups','3 × 10–15 reps','Upper body'],['Burpees','3 × 8–12 reps','Full body'],['Mountain climbers','3 × 20–30 reps','Core + cardio'],['Plank','3 × 30–60 sec','Core'],['Jump rope / Shadow jump','3–5 min','Cardio'],['Glute bridges','3 × 15–20 reps','Glutes'],['Stair climbing / Step-ups','5–10 min','Legs + cardio']];
 
 export default function FitnessGuide(){
  const [open,setOpen]=useState(false),[goal,setGoal]=useState<'low'|'gain'>('low'),[section,setSection]=useState('plan'),[selected,setSelected]=useState(0),[seconds,setSeconds]=useState(30),[running,setRunning]=useState(false);
  const p=plans[goal];
  const foods=useMemo(()=>goal==='low'?['Vegetables & fruit','Dal, beans & chickpeas','Oats, whole wheat & brown rice','Curd/milk or alternatives','Eggs/fish/chicken or suitable alternatives','Nuts & seeds in sensible portions']:['Rice, oats & whole grains','Dal, beans & chickpeas','Eggs/fish/chicken or suitable alternatives','Milk/curd or fortified alternatives','Nuts, seeds & nut butter','Avocado and healthy oils'],[goal]);
- useMemo(()=>{if(!running)return;const id=window.setInterval(()=>setSeconds(s=>{if(s<=1){setRunning(false);return 30}return s-1}),1000);return()=>window.clearInterval(id)},[running]);
+ useEffect(()=>{if(!running)return;const id=window.setInterval(()=>setSeconds(s=>{if(s<=1){setRunning(false);return 30}return s-1}),1000);return()=>window.clearInterval(id)},[running]);
  if(!open)return <button className="fit-launch" onClick={()=>setOpen(true)} aria-label="Open Ani Sani Fitness">💪 Fitness</button>;
  return <section className="fitness-guide" aria-label="Ani Sani Fitness Guide">
   <button className="fit-close-top" onClick={()=>setOpen(false)} aria-label="Close Fitness Guide" title="Close Fitness Guide"><X size={21}/></button>
