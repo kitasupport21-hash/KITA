@@ -1,5 +1,5 @@
 import {useMemo,useState} from 'react';
-import {Activity,Apple,ChevronDown,ChevronUp,Dumbbell,HeartPulse,Info,ShieldCheck,Utensils} from 'lucide-react';
+import {Activity,Apple,ChevronDown,ChevronUp,Dumbbell,HeartPulse,Info,ShieldCheck,Utensils,X} from 'lucide-react';
 
 const plans={
  low:{title:'Fat loss / healthier body composition',accent:'#f97316',items:[
@@ -24,6 +24,7 @@ export default function FitnessGuide(){
  const foods=useMemo(()=>goal==='low'?['Vegetables & fruit','Dal, beans & chickpeas','Oats, whole wheat & brown rice','Curd/milk or alternatives','Eggs/fish/chicken or suitable alternatives','Nuts & seeds in sensible portions']:['Rice, oats & whole grains','Dal, beans & chickpeas','Eggs/fish/chicken or suitable alternatives','Milk/curd or fortified alternatives','Nuts, seeds & nut butter','Avocado and healthy oils'],[goal]);
  if(!open)return <button className="fit-launch" onClick={()=>setOpen(true)} aria-label="Open Ani Sani Fitness">💪 Fitness</button>;
  return <section className="fitness-guide" aria-label="Ani Sani Fitness Guide">
+  <button className="fit-close-top" onClick={()=>setOpen(false)} aria-label="Close Fitness Guide" title="Close Fitness Guide"><X size={21}/></button>
   <div className="fit-hero">
    <div className="fit-anime" aria-label="Anime style fitness girl illustration"><div className="fit-hair"/><div className="fit-face"/><div className="fit-body"><span/><span/></div><div className="fit-dumbbell">🏋️</div></div>
    <div><div className="fit-kicker">ANI SANI • FITNESS & NUTRITION</div><h2>Healthy Body Guide</h2><p>Fat loss, healthy weight gain, exercise, food and daily habits — simple step by step.</p></div>
