@@ -9,7 +9,7 @@ const plans={
 const exercises=[['Running in place / High knees','3–5 min warm-up','Cardio'],['Jumping jacks','3 × 50–60 reps','Cardio'],['Bodyweight squats','3 × 15–20 reps','Legs'],['Push-ups','3 × 10–15 reps','Upper body'],['Burpees','3 × 8–12 reps','Full body'],['Mountain climbers','3 × 20–30 reps','Core + cardio'],['Plank','3 × 30–60 sec','Core'],['Jump rope / Shadow jump','3–5 min','Cardio'],['Glute bridges','3 × 15–20 reps','Glutes'],['Stair climbing / Step-ups','5–10 min','Legs + cardio']];
 
 export default function FitnessGuide(){
- const [open,setOpen]=useState(false),[goal,setGoal]=useState<'low'|'gain'>('low'),[section,setSection]=useState('plan'),[selected,setSelected]=useState(0),[seconds,setSeconds]=useState(30),[running,setRunning]=useState(false);
+ const [open,setOpen]=useState(false),[goal,setGoal]=useState<'low'|'gain'>('low'),[section,setSection]=useState('exercise'),[selected,setSelected]=useState(0),[seconds,setSeconds]=useState(30),[running,setRunning]=useState(false);
  const p=plans[goal];
  const foods=useMemo(()=>goal==='low'?['Vegetables & fruit','Dal, beans & chickpeas','Oats, whole wheat & brown rice','Curd/milk or alternatives','Eggs/fish/chicken or suitable alternatives','Nuts & seeds in sensible portions']:['Rice, oats & whole grains','Dal, beans & chickpeas','Eggs/fish/chicken or suitable alternatives','Milk/curd or fortified alternatives','Nuts, seeds & nut butter','Avocado and healthy oils'],[goal]);
  useEffect(()=>{if(!running)return;const id=window.setInterval(()=>setSeconds(s=>{if(s<=1){setRunning(false);return 30}return s-1}),1000);return()=>window.clearInterval(id)},[running]);
