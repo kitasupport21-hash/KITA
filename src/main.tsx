@@ -9,6 +9,7 @@ import './advanced.css';
 import './realtime.css';
 import './fitness.css';
 import './future.css';
+import './flow';
 
 createRoot(document.getElementById('root')!).render(<><App/><AdvancedFeatures/><RealtimeLayer/><FitnessGuide/><FutureHub/></>);
 
