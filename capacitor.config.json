@@ -1,0 +1,6 @@
+{
+  "appId": "com.anisani.life",
+  "appName": "Ani Sani",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}
