@@ -10,7 +10,9 @@
     {id: 'lights',title:'Matikan Lampu',icon:'✦',category:'Strategi',color:'#fff4d4',ink:'#9b741e',desc:'Matikan semua lampu dengan langkah yang terencana.'},
     {id: 'mastermind',title:'Tebak Kode',icon:'⌘',category:'Deduksi',color:'#e1e8ff',ink:'#4d5fb4',desc:'Temukan kode rahasia dengan petunjuk setiap tebakan.'},
     {id: 'sudoku',title:'Sudoku Mini',icon:'▦',category:'Angka',color:'#dcf7f7',ink:'#147e83',desc:'Isi kotak tanpa mengulang angka dalam baris, kolom, atau kotak.'},
-    {id: 'river',title:'Menyeberangi Sungai',icon:'↔',category:'Strategi',color:'#e6f4e0',ink:'#4c7d3c',desc:'Bantu semua menyeberang tanpa meninggalkan pasangan berbahaya.'}
+    {id: 'river',title:'Menyeberangi Sungai',icon:'↔',category:'Strategi',color:'#e6f4e0',ink:'#4c7d3c',desc:'Bantu semua menyeberang tanpa meninggalkan pasangan berbahaya.'},
+    {id: 'tricky',title:'Otak Usil',icon:'🧠',category:'Teka-teki',color:'#ffe6ef',ink:'#bd4671',desc:'Teka-teki jebakan kreatif yang menguji cara berpikirmu. 400 level.'},
+    {id: 'synapse',title:'Mesin Sinyal',icon:'⟲',category:'Logika Baru',color:'#dcf7f7',ink:'#147e83',desc:'Rangkai gerbang logika untuk mengubah sinyal awal menjadi sinyal sasaran.'}
   ];
   const $ = s => document.querySelector(s), home = $('#home-screen'), screen = $('#game-screen'), panel = $('#game-panel'), toast = $('#toast');
   const KEY = 'anibran-progress-v1';
@@ -89,6 +91,91 @@
     else{a=2+Math.floor(Math.random()*(10+Math.floor(n/10)));b=2+Math.floor(Math.random()*(10+Math.floor(n/15)));c=1+Math.floor(Math.random()*Math.min(8,2+Math.floor(n/50)));ans=(a+b)*c;q='('+a+' + '+b+') × '+c;}
     return{prompt:q,answer:String(ans),options:options(ans,[ans+1,ans-1,ans+Math.max(2,Math.floor(Math.abs(ans)/4)),ans-3,ans+7]),explain:'Hitung sesuai urutan operasi matematika.'};
   }
+
+  function makeTricky(n){
+    const mode=(n-1)%5, count=Math.min(8,4+Math.floor((n-1)/80));
+    if(mode===0){
+      const divisor=2+Math.floor(Math.random()*Math.min(5,2+Math.floor(n/100)));
+      const answer=divisor*(2+Math.floor(Math.random()*(3+Math.floor(n/40))));
+      const objects=[{symbol:'🔢',label:String(answer),value:answer}];
+      const used=new Set([answer]);
+      while(objects.length<count){
+        const v=1+Math.floor(Math.random()*(18+Math.floor(n/4)));
+        if(v%divisor!==0&&!used.has(v)){used.add(v);objects.push({symbol:pick(['🔷','🟣','🟡','🟢','🔺','🟠','🔶','🔵']),label:String(v),value:v});}
+      }
+      shuffle(objects);
+      return{type:'tap',q:{prompt:'Ketuk satu-satunya angka yang habis dibagi '+divisor+'. Perhatikan semua pilihan.',objects,target:objects.findIndex(o=>o.value===answer),explain:'Benar! Hanya '+answer+' yang habis dibagi '+divisor+'.'},result:null};
+    }
+    if(mode===1){
+      const words=['BINTANG','BUKU','CANGKIR','DAUN','MATAHARI','BOLA','KUNCI','KOMET','PISANG','JENDELA','PAYUNG','SEPATU'];
+      const targetWord=pick(words),labels=[targetWord];
+      while(labels.length<count){const w=pick(words);if(!labels.includes(w))labels.push(w);}
+      shuffle(labels);
+      const icons=shuffle(['🍉','🚀','🐟','🎈','🌙','⚽','🍎','🧩']);
+      const objects=labels.map((label,i)=>({symbol:icons[i%icons.length],label}));
+      return{type:'tap',q:{prompt:'Abaikan gambarnya. Ketuk tulisan “'+targetWord+'”.',objects,target:objects.findIndex(o=>o.label===targetWord),explain:'Tepat! Kamu mengikuti instruksi dan tidak terkecoh oleh ikon.'},result:null};
+    }
+    if(mode===2){
+      const taken=2+Math.floor(Math.random()*3),total=taken+5;
+      const answer=String(taken),opts=shuffle([answer,String(total),String(total-taken),String(total+taken)]);
+      return{type:'choice',q:{prompt:'Ada '+total+' buah di atas meja. Kamu mengambil '+taken+' buah. Berapa buah yang sekarang kamu miliki?',answer,options:opts,explain:'Yang kamu ambil ada '+taken+' buah. Pertanyaannya berapa yang kamu miliki, bukan berapa yang tertinggal.'},result:null};
+    }
+    if(mode===3){
+      const x=2+Math.floor(Math.random()*Math.min(18,2+Math.floor(n/20))),answer=x*x;
+      return{type:'choice',q:{prompt:'Mesin ajaib mengubah setiap angka menjadi angka itu dikalikan dengan dirinya sendiri. Jika masukannya '+x+', berapa keluarannya?',answer:String(answer),options:options(answer,[x*2,x+ x,answer+1,answer-x]),explain:x+' × '+x+' = '+answer+'. Jangan tertipu oleh pilihan yang hanya menggandakan angka.'},result:null};
+    }
+    const dirs=['↑','→','↓','←'],targetDir=pick(dirs),correct=dirs[(dirs.indexOf(targetDir)+2)%4],objects=shuffle(dirs.map(d=>({symbol:d,label:'Panah '+d,value:d})));
+    return{type:'tap',q:{prompt:'Ketuk panah yang mengarah tepat berlawanan dengan '+targetDir+'.',objects,target:objects.findIndex(o=>o.value===correct),explain:'Tepat! Arah berlawanan berada 180° dari panah yang disebutkan.'},result:null};
+  }
+  const SYNAPSE_OPS=[
+    {id:'add',name:'Tambah 1',desc:'Angka maju satu; 9 kembali ke 0.'},
+    {id:'mirror',name:'Cermin angka',desc:'Balik angka: 0↔9, 1↔8, dan seterusnya.'},
+    {id:'turn',name:'Putar arah',desc:'Panah berputar 90° searah jarum jam.'},
+    {id:'flip',name:'Balik warna',desc:'Ubah warna sinyal menjadi warna sebaliknya.'},
+    {id:'double',name:'Lipat angka',desc:'Angka menjadi (angka × 2 + 1) lalu kembali ke rentang 0–9.'},
+    {id:'sync',name:'Sinkronkan',desc:'Putar arah sesuai angka saat ini, lalu atur warna dari angka dan arah baru.'}
+  ];
+  function applySynapse(signal,id){
+    const s={value:signal.value,direction:signal.direction,color:signal.color};
+    if(id==='add')s.value=(s.value+1)%10;
+    else if(id==='mirror')s.value=9-s.value;
+    else if(id==='turn')s.direction=(s.direction+1)%4;
+    else if(id==='flip')s.color=1-s.color;
+    else if(id==='double')s.value=(s.value*2+1)%10;
+    else if(id==='sync'){s.direction=(s.direction+s.value)%4;s.color=(s.value+s.direction)%2;}
+    return s;
+  }
+  function makeSynapse(n){
+    const steps=2+Math.floor((n-1)/80),start={value:Math.floor(Math.random()*10),direction:Math.floor(Math.random()*4),color:Math.floor(Math.random()*2)};
+    let solution=[],target={value:start.value,direction:start.direction,color:start.color};
+    for(let attempt=0;attempt<60;attempt++){
+      solution=Array.from({length:steps},()=>pick(SYNAPSE_OPS).id);
+      target=solution.reduce((state,op)=>applySynapse(state,op),Object.assign({},start));
+      if(target.value!==start.value||target.direction!==start.direction||target.color!==start.color)break;
+    }
+    if(target.value===start.value&&target.direction===start.direction&&target.color===start.color){
+      solution=['add','turn'];
+      while(solution.length<steps)solution.push('flip');
+      target=solution.reduce((state,op)=>applySynapse(state,op),Object.assign({},start));
+    }
+    return{steps,start,target,selected:[],result:null};
+  }
+  function renderTricky(){
+    const q=game.q;
+    if(q.type==='tap'){
+      return'<div class="panel-top"><span class="micro-label">TEKA-TEKI USIL</span><span class="question-count">Level '+level+' / 400</span></div><div class="question-title">'+q.prompt+'</div><p class="question-help">Baca instruksi dua kali sebelum memilih. Kadang jawaban paling jelas bukan jawaban yang benar.</p><div class="tricky-grid">'+q.objects.map((o,i)=>'<button class="tricky-object" type="button" data-action="tricky-pick" data-index="'+i+'"><span class="tricky-symbol">'+o.symbol+'</span><span class="tricky-label">'+o.label+'</span></button>').join('')+'</div>';
+    }
+    return choice('TEKA-TEKI USIL',q);
+  }
+  function signalView(label,s){
+    const arrows=['↑','→','↓','←'];
+    return'<div class="signal-card"><span class="signal-label">'+label+'</span><strong class="signal-number">'+s.value+'</strong><span class="signal-arrow">'+arrows[s.direction]+'</span><span class="signal-color '+(s.color?'signal-night':'signal-day')+'">'+(s.color?'Gelap':'Terang')+'</span></div>';
+  }
+  function renderSynapse(){
+    const selected=game.selected.map((id,i)=>{const op=SYNAPSE_OPS.find(o=>o.id===id);return'<button type="button" class="signal-chip" data-action="synapse-remove" data-index="'+i+'" aria-label="Hapus '+op.name+' dari slot '+(i+1)+'"><span>'+ (i+1)+'. '+op.name+'</span> <b>×</b></button>';}).join('');
+    return'<div class="panel-top"><span class="micro-label">MESIN SINYAL</span><span class="question-count">'+game.selected.length+' / '+game.steps+' gerbang</span></div><p class="question-help">Rangkai gerbang dalam urutan yang benar untuk mengubah sinyal awal menjadi sinyal sasaran. Ketuk gerbang untuk memasukkannya ke rangkaian; ketuk slot untuk menghapusnya.</p><div class="signal-pair">'+signalView('SINYAL AWAL',game.start)+'<span class="signal-arrow-between">→</span>'+signalView('SINYAL SASARAN',game.target)+'</div><h3 class="signal-section-title">Rangkaianmu</h3><div class="signal-selected">'+(selected||'<p class="answer-note">Belum ada gerbang. Pilih gerbang di bawah.</p>')+'</div><h3 class="signal-section-title">Pilih gerbang logika</h3><div class="signal-gates">'+SYNAPSE_OPS.map(o=>'<button type="button" class="signal-gate" data-action="synapse-add" data-op="'+o.id+'" '+(game.selected.length>=game.steps?'disabled':'')+'><strong>'+o.name+'</strong><span>'+o.desc+'</span></button>').join('')+'</div><div class="action-row"><button type="button" class="primary-button" data-action="synapse-run" '+(game.selected.length!==game.steps?'disabled':'')+'>Uji rangkaian ↗</button><button type="button" class="secondary-button" data-action="synapse-clear">Kosongkan</button></div>';
+  }
+
   function canPlace(b,i,v){const r=Math.floor(i/4),c=i%4;for(let j=0;j<4;j++)if((j!==c&&b[r*4+j]===v)||(j!==r&&b[j*4+c]===v))return false;const br=Math.floor(r/2)*2,bc=Math.floor(c/2)*2;for(let y=br;y<br+2;y++)for(let x=bc;x<bc+2;x++){const p=y*4+x;if(p!==i&&b[p]===v)return false;}return true;}
   function sudokuCount(b,lim){const i=b.indexOf(0);if(i<0)return 1;let n=0;for(let v=1;v<=4;v++)if(canPlace(b,i,v)){b[i]=v;n+=sudokuCount(b,lim-n);b[i]=0;if(n>=lim)return n;}return n;}
   function makeSudoku(n){const base=[1,2,3,4,3,4,1,2,2,1,4,3,4,3,2,1],map=shuffle([1,2,3,4]),sol=base.map(v=>map[v-1]),pos=shuffle(Array.from({length:16},(_,i)=>i)),wanted=Math.max(6,12-Math.floor((n-1)/50)),given=Array(16).fill(false),board=Array(16).fill(0);pos.slice(0,wanted).forEach(i=>{given[i]=true;board[i]=sol[i];});let j=wanted;while(sudokuCount(board.slice(),2)!==1&&j<16){const i=pos[j++];given[i]=true;board[i]=sol[i];}return{board,givens:given,solution:sol,selected:given.indexOf(false),result:null};}
@@ -99,6 +186,8 @@
     if(id==='pattern')return{q:makePattern(n),result:null};
     if(id==='word')return{q:makeWord(n),result:null};
     if(id==='math')return{q:makeMath(n),result:null};
+    if(id==='tricky')return makeTricky(n);
+    if(id==='synapse')return makeSynapse(n);
     if(id==='memory'){const count=Math.min(23,3+Math.floor((n-1)/18)),targets=[];while(targets.length<count){const i=Math.floor(Math.random()*25);if(!targets.includes(i))targets.push(i);}return{count,targets,selected:[],phase:'show',revealMs:Math.max(500,1800-(n-1)*3),result:null};}
     if(id==='lights'){const cells=Array(25).fill(false),moves=Math.min(22,2+Math.floor(n/18));for(let i=0;i<moves;i++)flip(cells,Math.floor(Math.random()*25));if(cells.every(v=>!v))flip(cells,12);return{cells,moves:0,maxMoves:moves+5,result:null};}
     if(id==='mastermind'){const len=Math.min(6,3+Math.floor((n-1)/100)),digits=shuffle(Array.from({length:len+2},(_,i)=>i+1));return{code:digits.slice(0,len),history:[],attempts:0,maxAttempts:Math.max(4,9-Math.floor((n-1)/60)),result:null};}
@@ -118,6 +207,8 @@
       lights:()=>'<div class="panel-top"><span class="micro-label">RENCANAKAN LANGKAH</span><span class="question-count">'+game.moves+' / '+game.maxMoves+' langkah</span></div><p class="question-help">Matikan semua lampu. Menekan satu kotak juga mengubah tetangga atas, bawah, kiri, dan kanan.</p><div class="light-grid">'+game.cells.map((v,i)=>'<button type="button" class="light-cell '+(v?'on':'')+'" data-action="light-toggle" data-index="'+i+'" aria-label="Lampu '+(i+1)+'"></button>').join('')+'</div><div class="action-row"><button type="button" class="secondary-button" data-action="lights-reset">Acak ulang</button></div>',
       mastermind:()=>{const hist=game.history.length?'<ul class="mm-history">'+game.history.map((h,i)=>'<li class="mm-row"><span class="micro-label">TEBAKAN '+(i+1)+'</span><span class="mm-code">'+h.guess.join(' ')+'</span><span class="mm-feedback">'+h.exact+' tepat · '+h.misplaced+' salah posisi</span></li>').join('')+'</ul>':'<p class="answer-note">Petunjuk muncul setelah tebakan pertama.</p>';const selects=game.code.map((v,i)=>'<select class="mm-select" data-mm-pos="'+i+'" aria-label="Angka kode '+(i+1)+'">'+Array.from({length:game.code.length+2},(_,j)=>'<option value="'+(j+1)+'" '+(j===i?'selected':'')+'>'+(j+1)+'</option>').join('')+'</select>').join('');return'<div class="panel-top"><span class="micro-label">PECAHKAN KODE</span><span class="question-count">'+game.attempts+' / '+game.maxAttempts+' tebakan</span></div><p class="question-help">Temukan '+game.code.length+' angka yang berbeda. “Tepat” berarti angka dan posisi benar; “salah posisi” berarti angka benar, posisi salah.</p>'+hist+'<div class="mm-inputs">'+selects+'</div><div class="action-row"><button type="button" class="primary-button" data-action="mm-guess">Kirim tebakan ↗</button></div>';},
       sudoku:()=>'<div class="panel-top"><span class="micro-label">SUDOKU 4 × 4</span><span class="question-count">Angka 1–4</span></div><p class="question-help">Setiap baris, kolom, dan kotak 2×2 harus berisi angka 1, 2, 3, dan 4 satu kali. Pilih kotak kosong lalu pilih angka.</p><div class="sudoku-grid">'+game.board.map((v,i)=>'<button type="button" class="sudoku-cell '+(game.givens[i]?'given ':'')+(game.selected===i?'selected':'')+'" data-action="sudoku-cell" data-index="'+i+'">'+(v||'')+'</button>').join('')+'</div><div class="digit-pad">'+[1,2,3,4].map(v=>'<button type="button" class="digit-button" data-action="sudoku-value" data-value="'+v+'">'+v+'</button>').join('')+'<button type="button" class="digit-button erase" data-action="sudoku-value" data-value="0">Hapus</button></div><div class="action-row"><button type="button" class="primary-button" data-action="sudoku-check">Periksa jawaban ↗</button><button type="button" class="secondary-button" data-action="sudoku-reset">Ulangi teka-teki</button></div>',
+      tricky:()=>renderTricky(),
+      synapse:()=>renderSynapse(),
       river:()=>{const names={farmer:'🧑‍🌾 Petani',wolf:'🐺 Serigala',goat:'🐐 Kambing',cabbage:'🥬 Kubis'},left=Object.keys(game.sides).filter(k=>game.sides[k]===0),right=Object.keys(game.sides).filter(k=>game.sides[k]===1);return'<div class="panel-top"><span class="micro-label">SEBERANGKAN DENGAN AMAN</span><span class="question-count">'+game.moves+' / '+game.maxCrossings+' perjalanan</span></div><p class="question-help">Petani hanya bisa membawa satu penumpang. Serigala tidak boleh ditinggal bersama kambing, dan kambing tidak boleh ditinggal bersama kubis.</p><div class="river-banks"><div class="river-bank"><h3>TEPI KIRI</h3><div class="river-people">'+left.map(k=>'<span class="river-person">'+names[k]+'</span>').join('')+'</div></div><div class="river-boat">⛵<small style="display:block;font-size:9px">SUNGAI</small></div><div class="river-bank"><h3>TEPI KANAN</h3><div class="river-people">'+right.map(k=>'<span class="river-person">'+names[k]+'</span>').join('')+'</div></div></div><p class="answer-note">Pilih yang dibawa petani:</p><div class="river-select">'+[{k:'alone',t:'Sendiri'},{k:'wolf',t:'Serigala'},{k:'goat',t:'Kambing'},{k:'cabbage',t:'Kubis'}].map(o=>'<button type="button" class="river-choice '+(game.passenger===o.k?'active':'')+'" data-action="river-passenger" data-value="'+o.k+'">'+o.t+'</button>').join('')+'</div><div class="action-row"><button type="button" class="primary-button" data-action="river-cross">Seberangkan ↗</button><button type="button" class="secondary-button" data-action="river-reset">Mulai ulang</button></div>';}
     };
     panel.innerHTML=bar+render[active]();saveActive();
@@ -156,6 +247,18 @@
     if(a==='sudoku-check'){if(game.board.every((v,i)=>v===game.solution[i]))finish(true,'Semua baris, kolom, dan kotak sudah benar!',180);else say('Belum benar. Periksa setiap baris, kolom, dan kotak.');return;}
     if(a==='sudoku-reset'){start(active,level);return;}
     if(a==='river-passenger'){game.passenger=b.dataset.value;draw();return;}
+    if(a==='tricky-pick'){const ok=Number(b.dataset.index)===game.q.target;finish(ok,ok?game.q.explain:'Pilihan itu belum tepat. Baca instruksi kecilnya dengan cermat, lalu coba lagi.',ok?120+Math.min(level,400):0);return;}
+    if(a==='synapse-add'){if(game.selected.length>=game.steps){say('Rangkaian sudah penuh. Hapus satu gerbang untuk mengubahnya.');return;}game.selected.push(b.dataset.op);draw();return;}
+    if(a==='synapse-remove'){game.selected.splice(Number(b.dataset.index),1);draw();return;}
+    if(a==='synapse-clear'){game.selected=[];draw();return;}
+    if(a==='synapse-run'){
+      if(game.selected.length!==game.steps){say('Pilih gerbang sampai semua slot terisi.');return;}
+      const result=game.selected.reduce((signal,op)=>applySynapse(signal,op),Object.assign({},game.start));
+      if(result.value===game.target.value&&result.direction===game.target.direction&&result.color===game.target.color){
+        finish(true,'Sinyal berhasil dirangkai! Semua gerbang menghasilkan keluaran yang tepat.',150+Math.min(level,400));
+      }else{say('Sinyal belum cocok. Periksa urutan gerbang, lalu coba lagi.');}
+      return;
+    }
     if(a==='river-cross'){crossRiver();return;}
     if(a==='river-reset'){start(active,level);return;}
     if(a==='install'){if(installPrompt){installPrompt.prompt();installPrompt.userChoice.then(c=>{if(c&&c.outcome==='accepted')say('Ani Bran sedang dipasang.');installPrompt=null;}).catch(()=>installPrompt=null);}else say('Buka menu Chrome, lalu pilih “Instal aplikasi” atau “Tambahkan ke layar utama”.');}
