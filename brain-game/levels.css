@@ -1,0 +1,28 @@
+/* Ani Bran: progres dan pemilih level */
+.level-card-progress{display:flex;justify-content:space-between;gap:8px;color:#77798f;font-size:10px;font-weight:800;margin-top:13px}
+.level-card-track,.level-progress-track{height:6px;border-radius:10px;overflow:hidden;background:#eeedf8}
+.level-card-track{margin-top:7px}
+.level-card-track i,.level-progress-track i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#6757e8,#54dfb0)}
+.level-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 0 10px;padding:13px 14px;border:1px solid var(--line);border-radius:14px;background:#fbfbff}
+.level-toolbar strong{display:block;margin-top:3px;font-size:19px;letter-spacing:-.5px}
+.level-toolbar strong span{color:#9b9bb0;font-size:12px;font-weight:750}
+.level-toolbar p{margin:3px 0 0;color:var(--muted);font-size:10px}
+.level-kicker{display:block;color:#898aa0;font-size:9px;font-weight:850;letter-spacing:1px}
+.level-picker-label{display:flex;flex-direction:column;gap:5px;color:var(--muted);font-size:10px;font-weight:800}
+#level-picker{max-width:150px;min-width:112px;padding:9px 10px;border:1px solid #dcd9f9;border-radius:10px;background:#fff;color:var(--purple-dark);font-size:12px;font-weight:850}
+.level-progress-track{margin-bottom:22px;height:5px}
+.level-progress-track i{background:#54cda6}
+.game-card{min-height:205px}
+.game-card p{min-height:40px}
+button:disabled{cursor:not-allowed}
+@media(max-width:600px){
+.game-card{min-height:205px}
+.game-card p{min-height:48px}
+.level-toolbar{padding:11px 10px;gap:8px}
+.level-toolbar strong{font-size:17px}
+.level-kicker{font-size:8px;letter-spacing:.5px}
+#level-picker{min-width:104px;max-width:120px;padding:8px 5px;font-size:11px}
+.mm-select{min-width:0;flex:1 1 36px;max-width:60px;padding:10px 2px}
+.mm-inputs{gap:5px}
+.river-bank h3{font-size:9px}
+}
