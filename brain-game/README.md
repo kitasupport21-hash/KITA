@@ -1,6 +1,6 @@
 # Ani Bran — Latih Otakmu
 
-Ani Bran adalah aplikasi web permainan otak yang mengutamakan ponsel dan berbahasa Indonesia. Tersedia 10 permainan dengan 400 level untuk setiap permainan. Tantangan meningkat berdasarkan level.
+Ani Bran adalah aplikasi web permainan otak yang mengutamakan ponsel dan berbahasa Indonesia. Tersedia 12 permainan dengan 400 level untuk setiap permainan. Tantangan meningkat berdasarkan level.
 
 ## 10 permainan
 1. **Sequence Lab** — numerical sequences and rule discovery.
@@ -35,3 +35,6 @@ Buka situs melalui HTTPS. Di Chrome Android, buka menu peramban lalu pilih **Ins
 - Check each game’s win and loss flow.
 - Verify scores persist after refresh on the same browser.
 - Test on a narrow phone screen and with browser offline after the first load.
+
+11. **Otak Usil** — teka-teki trik orisinal dengan pilihan visual dan pertanyaan logika.
+12. **Mesin Sinyal** — rangkai gerbang operasi untuk mengubah sinyal awal menjadi sinyal sasaran.
