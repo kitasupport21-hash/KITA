@@ -162,7 +162,7 @@
   }
   function renderTricky(){
     const q=game.q;
-    if(q.type==='tap'){
+    if(game.type==='tap'){
       return'<div class="panel-top"><span class="micro-label">TEKA-TEKI USIL</span><span class="question-count">Level '+level+' / 400</span></div><div class="question-title">'+q.prompt+'</div><p class="question-help">Baca instruksi dua kali sebelum memilih. Kadang jawaban paling jelas bukan jawaban yang benar.</p><div class="tricky-grid">'+q.objects.map((o,i)=>'<button class="tricky-object" type="button" data-action="tricky-pick" data-index="'+i+'"><span class="tricky-symbol">'+o.symbol+'</span><span class="tricky-label">'+o.label+'</span></button>').join('')+'</div>';
     }
     return choice('TEKA-TEKI USIL',q);
