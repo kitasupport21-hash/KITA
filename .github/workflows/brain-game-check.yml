@@ -1,0 +1,31 @@
+name: BrainForge checks
+
+on:
+  push:
+    paths:
+      - "brain-game/**"
+      - ".github/workflows/brain-game-check.yml"
+  pull_request:
+    paths:
+      - "brain-game/**"
+      - ".github/workflows/brain-game-check.yml"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Check JavaScript syntax
+        run: |
+          node --check brain-game/app.js
+          node --check brain-game/sw.js
+      - name: Validate manifest and asset references
+        run: |
+          node -e "JSON.parse(require('fs').readFileSync('brain-game/manifest.json', 'utf8')); console.log('manifest.json valid')"
+          node -e "const fs=require('fs'); const h=fs.readFileSync('brain-game/index.html','utf8'); for(const p of ['./styles.css','./app.js','./manifest.json','./icon.svg','./sw.js']) { if(!h.includes(p)) throw new Error('Missing reference: '+p); } console.log('HTML asset references valid')"
+          node -e "const s=fs.readFileSync('brain-game/app.js','utf8'); const n=(s.match(/id: '(sequence|memory|logic|math|pattern|word|lights|mastermind|sudoku|river)'/g)||[]).length; if(n!==10) throw new Error('Expected 10 games, found '+n); console.log('10 game definitions found')"

@@ -1,0 +1,15 @@
+{
+  "id": "./",
+  "name": "BrainForge — Think Better",
+  "short_name": "BrainForge",
+  "description": "Ten thoughtful mini-games to train logic, memory, patterns and problem-solving.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f5f6fb",
+  "theme_color": "#15162b",
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

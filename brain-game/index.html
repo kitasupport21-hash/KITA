@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#15162b">
+  <meta name="description" content="Ten thoughtful mini-games to train logic, memory, pattern recognition and problem-solving.">
+  <title>BrainForge — Think Better</title>
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="./" aria-label="BrainForge home" data-action="home">
+        <span class="brand-mark" aria-hidden="true">B<span>+</span></span>
+        <span><strong>BrainForge</strong><small>THINK. TRAIN. LEVEL UP.</small></span>
+      </a>
+      <div class="topbar-right">
+        <span class="offline-pill"><i></i> Ready to play</span>
+        <button class="icon-button" type="button" data-action="install" aria-label="Install app" title="Install app">↓</button>
+      </div>
+    </header>
+    <main>
+      <section id="home-screen" class="screen">
+        <section class="hero">
+          <div class="hero-copy">
+            <p class="eyebrow"><span class="sparkle">✦</span> YOUR DAILY MIND WORKOUT</p>
+            <h1>Make your brain<br><em>unstoppable.</em></h1>
+            <p class="hero-description">Ten clever challenges. Real logic. Sharper thinking—one round at a time.</p>
+            <button class="primary-button" type="button" data-action="play-first">Start training <span>↗</span></button>
+          </div>
+          <div class="brain-art" aria-hidden="true">
+            <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div>
+            <div class="brain-core"><span>✳</span></div>
+            <span class="float-chip chip-a">LOGIC</span><span class="float-chip chip-b">MEMORY</span><span class="float-chip chip-c">FOCUS</span>
+          </div>
+        </section>
+        <section class="stats-row" aria-label="Your progress">
+          <div class="stat-card"><span class="stat-icon mint">✦</span><div><strong id="stat-points">0</strong><span>Points earned</span></div></div>
+          <div class="stat-card"><span class="stat-icon violet">◈</span><div><strong id="stat-wins">0</strong><span>Challenges cleared</span></div></div>
+          <div class="stat-card"><span class="stat-icon gold">⌁</span><div><strong id="stat-best">—</strong><span>Top game score</span></div></div>
+        </section>
+        <section class="games-section">
+          <div class="section-heading">
+            <div><p class="eyebrow">PICK YOUR CHALLENGE</p><h2>Train a different skill</h2></div>
+            <span class="game-count">10 GAMES</span>
+          </div>
+          <div id="game-grid" class="game-grid"></div>
+        </section>
+        <p class="footer-note">Made for curious minds · Progress stays on this device</p>
+      </section>
+      <section id="game-screen" class="screen" hidden>
+        <div class="game-topline">
+          <button type="button" class="back-button" data-action="home"><span>←</span> All games</button>
+          <span id="game-category" class="category-tag">LOGIC</span>
+        </div>
+        <div class="game-heading">
+          <span id="game-icon" class="game-heading-icon">⌁</span>
+          <div><h1 id="game-title">Game title</h1><p id="game-subtitle">Game instructions</p></div>
+        </div>
+        <div id="game-panel" class="play-panel"></div>
+        <p class="footer-note game-footer">Take your time. Think it through.</p>
+      </section>
+    </main>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="./app.js" defer></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () { navigator.serviceWorker.register('./sw.js').catch(function () {}); });
+    }
+  </script>
+</body>
+</html>
