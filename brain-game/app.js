@@ -158,7 +158,7 @@
       while(solution.length<steps)solution.push('flip');
       target=solution.reduce((state,op)=>applySynapse(state,op),Object.assign({},start));
     }
-    return{steps,start,target,selected:[],result:null};
+    return{steps,start,target,selected:[],solution,result:null};
   }
   function renderTricky(){
     const q=game.q;
