@@ -29,7 +29,7 @@ jobs:
         run: |
           node -e "JSON.parse(require('fs').readFileSync('brain-game/manifest.json', 'utf8')); console.log('manifest.json valid')"
           node -e "const fs=require('fs'); const h=fs.readFileSync('brain-game/index.html','utf8'); for(const p of ['./styles.css','./levels.css','./app.js','./manifest.json','./icon.svg','./sw.js']) { if(!h.includes(p)) throw new Error('Missing reference: '+p); } console.log('HTML asset references valid')"
-          node -e "const s=fs.readFileSync('brain-game/app.js','utf8'); const n=(s.match(/id: '(sequence|memory|logic|math|pattern|word|lights|mastermind|sudoku|river)'/g)||[]).length; if(n!==10) throw new Error('Expected 10 games, found '+n); console.log('10 game definitions found')"
+          node -e "const s=fs.readFileSync('brain-game/app.js','utf8'); const n=(s.match(/id: '(sequence|memory|logic|math|pattern|word|lights|mastermind|sudoku|river|tricky|synapse)'/g)||[]).length; if(n!==12) throw new Error('Expected 12 games, found '+n); console.log('10 game definitions found')"
 
-      - name: Run runtime and 4,000-level smoke tests
+      - name: Run runtime and 4,800-level smoke tests
         run: node brain-game/smoke-test.cjs
