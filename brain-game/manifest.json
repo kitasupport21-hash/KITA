@@ -1,14 +1,15 @@
 {
   "id": "./",
-  "name": "BrainForge — Think Better",
-  "short_name": "BrainForge",
-  "description": "Ten thoughtful mini-games to train logic, memory, patterns and problem-solving.",
+  "name": "Ani Bran — Latih Otakmu",
+  "short_name": "Ani Bran",
+  "description": "10 permainan otak dalam bahasa Indonesia, dengan 400 level setiap permainan dan progres tersimpan.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#f5f6fb",
   "theme_color": "#15162b",
+  "lang": "id",
   "icons": [
     { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
   ]
