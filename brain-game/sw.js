@@ -1,5 +1,5 @@
 'use strict';
-const CACHE_NAME = 'ani-bran-static-v4';
+const CACHE_NAME = 'ani-bran-static-v5';
 const ASSETS = ['./', './index.html', './styles.css', './levels.css', './app.js', './manifest.json', './icon.svg'];
 self.addEventListener('install', function (event) {
   event.waitUntil(caches.open(CACHE_NAME).then(function (cache) { return cache.addAll(ASSETS); }).then(function () { return self.skipWaiting(); }));
