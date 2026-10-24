@@ -1,0 +1,74 @@
+name: Build Ani Bran APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "android-app/**"
+      - ".github/workflows/build-anibran-apk.yml"
+      - "brain-game/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out Ani Bran
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK platform
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: Run the game's existing smoke tests
+        run: |
+          node --check brain-game/app.js
+          node brain-game/smoke-test.cjs
+
+      - name: Bundle the original game files without UI edits
+        run: |
+          mkdir -p android-app/app/src/main/assets/www
+          cp -a brain-game/. android-app/app/src/main/assets/www/
+          rm -f android-app/app/src/main/assets/www/README.md
+          rm -f android-app/app/src/main/assets/www/smoke-test.cjs
+          test -f android-app/app/src/main/assets/www/index.html
+          test -f android-app/app/src/main/assets/www/app.js
+          test -f android-app/app/src/main/assets/www/styles.css
+          test -f android-app/app/src/main/assets/www/levels.css
+          grep -q "WELCOME TO ANI BRIAN" android-app/app/src/main/assets/www/index.html
+
+      - name: Build installable debug APK
+        run: gradle --no-daemon --stacktrace -p android-app assembleDebug
+
+      - name: Verify APK output
+        run: |
+          test -s android-app/app/build/outputs/apk/debug/app-debug.apk
+          ls -lh android-app/app/build/outputs/apk/debug/app-debug.apk
+          sha256sum android-app/app/build/outputs/apk/debug/app-debug.apk > android-app/app/build/outputs/apk/debug/app-debug.apk.sha256
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ani-bran-android-apk
+          path: |
+            android-app/app/build/outputs/apk/debug/app-debug.apk
+            android-app/app/build/outputs/apk/debug/app-debug.apk.sha256
+          if-no-files-found: error
+          retention-days: 30
