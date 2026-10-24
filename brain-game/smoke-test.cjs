@@ -6,7 +6,7 @@ const appPath = path.join(__dirname, 'app.js');
 let source = fs.readFileSync(appPath, 'utf8');
 const insertionPoint = '  const saved=data.active;';
 if (!source.includes(insertionPoint)) throw new Error('Cannot attach game smoke tests: app initialization marker missing.');
-source = source.replace(insertionPoint, '  window.__aniTest = { GAMES, makeGame, sudokuCount };' + insertionPoint);
+source = source.replace(insertionPoint, '  window.__aniTest = { GAMES, makeGame, sudokuCount, applySynapse };' + insertionPoint);
 
 const elements = new Map();
 function element() {
@@ -32,12 +32,13 @@ const sandbox = {
 
 vm.runInNewContext(source, sandbox, { timeout: 10000 });
 const test = window.__aniTest;
-if (!test || test.GAMES.length !== 10) throw new Error('App startup failed or not all 10 games registered.');
+if (!test || test.GAMES.length !== 12) throw new Error('App startup failed or not all 10 games registered.');
 const rendered = elements.get('#game-grid').innerHTML;
-if (!rendered || (rendered.match(/class="game-card"/g) || []).length !== 10) {
-  throw new Error('Homepage did not render all 10 game buttons.');
+if (!rendered || (rendered.match(/class="game-card"/g) || []).length !== 12) {
+  throw new Error('Homepage did not render all 12 game buttons.');
 }
 let instances = 0;
+let trickyLevels = 0, synapseLevels = 0;
 for (let level = 1; level <= 400; level++) {
   for (const meta of test.GAMES) {
     const g = test.makeGame(meta.id, level);
@@ -51,6 +52,21 @@ for (let level = 1; level <= 400; level++) {
     }
     if (meta.id === 'word' && g.q.scramble === g.q.answer) {
       throw new Error('Word was not scrambled at level ' + level);
+    }
+    if (meta.id === 'tricky') {
+      if (g.q.type === 'tap' && (!Array.isArray(g.q.objects) || g.q.target < 0 || g.q.target >= g.q.objects.length)) {
+        throw new Error('Invalid trick puzzle at level ' + level);
+      }
+      if (g.q.type === 'choice' && (!g.q.options || !g.q.options.includes(String(g.q.answer)))) {
+        throw new Error('Invalid trick answer at level ' + level);
+      }
+      trickyLevels++;
+    }
+    if (meta.id === 'synapse') {
+      if (g.steps !== 2 + Math.floor((level - 1) / 80) || g.solution.length !== g.steps) throw new Error('Invalid signal puzzle steps at level ' + level);
+      const signal = g.solution.reduce((state, op) => test.applySynapse(state, op), Object.assign({}, g.start));
+      if (signal.value !== g.target.value || signal.direction !== g.target.direction || signal.color !== g.target.color) throw new Error('Signal solution does not reach target at level ' + level);
+      synapseLevels++;
     }
     if (meta.id === 'memory' && (g.targets.length !== g.count || new Set(g.targets).size !== g.count)) {
       throw new Error('Memory target issue at level ' + level);
@@ -67,5 +83,6 @@ for (let level = 1; level <= 400; level++) {
     instances++;
   }
 }
-console.log('PASS: app started and rendered 10 game buttons.');
-console.log('PASS: generated ' + instances + ' game-level instances; answer choices, word scrambling, memory targets, code digits and Sudoku uniqueness checked.');
+console.log('PASS: app started and rendered 12 game buttons.');
+console.log('PASS: generated ' + instances + ' game-level instances; answer choices, word scrambling, memory targets, code digits, Sudoku uniqueness, trick puzzles and signal solutions checked.');
+console.log('PASS: ' + trickyLevels + ' Otak Usil puzzles and ' + synapseLevels + ' Mesin Sinyal puzzles validated.');
