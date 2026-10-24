@@ -6,7 +6,7 @@ const appPath = path.join(__dirname, 'app.js');
 let source = fs.readFileSync(appPath, 'utf8');
 const insertionPoint = '  const saved=data.active;';
 if (!source.includes(insertionPoint)) throw new Error('Cannot attach game smoke tests: app initialization marker missing.');
-source = source.replace(insertionPoint, '  window.__aniTest = { GAMES, makeGame, sudokuCount, applySynapse };' + insertionPoint);
+source = source.replace(insertionPoint, '  window.__aniTest = { GAMES, makeGame, sudokuCount, applySynapse, start, click, getGame: () => game, getData: () => data };' + insertionPoint);
 
 const elements = new Map();
 function element() {
@@ -83,6 +83,27 @@ for (let level = 1; level <= 400; level++) {
     instances++;
   }
 }
+// Simulate delegated button clicks so we test the new games' real completion flow.
+test.start('tricky', 1);
+let state = test.getGame();
+if (state.q.type !== 'tap' || state.q.target < 0) throw new Error('Otak Usil did not start a tap puzzle.');
+test.click({target: {closest: () => ({dataset: {action: 'tricky-pick', index: String(state.q.target)}})}});
+if (!test.getData().games.tricky.completed.includes(1) || test.getData().games.tricky.unlocked !== 2) {
+  throw new Error('Otak Usil completion did not save progress or unlock level 2.');
+}
+test.start('synapse', 1);
+state = test.getGame();
+state.selected = state.solution.slice();
+test.click({target: {closest: () => ({dataset: {action: 'synapse-run'}})}});
+if (!test.getData().games.synapse.completed.includes(1) || test.getData().games.synapse.unlocked !== 2) {
+  throw new Error('Mesin Sinyal completion did not save progress or unlock level 2.');
+}
+const saved = JSON.parse(store.get('anibran-progress-v1'));
+if (!saved.games.tricky.completed.includes(1) || !saved.games.synapse.completed.includes(1)) {
+  throw new Error('Progress was not persisted in localStorage.');
+}
+console.log('PASS: Otak Usil and Mesin Sinyal button interactions complete levels and persist progress.');
+
 console.log('PASS: app started and rendered 12 game buttons.');
 console.log('PASS: generated ' + instances + ' game-level instances; answer choices, word scrambling, memory targets, code digits, Sudoku uniqueness, trick puzzles and signal solutions checked.');
 console.log('PASS: ' + trickyLevels + ' Otak Usil puzzles and ' + synapseLevels + ' Mesin Sinyal puzzles validated.');
