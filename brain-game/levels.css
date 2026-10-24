@@ -26,3 +26,45 @@ button:disabled{cursor:not-allowed}
 .mm-inputs{gap:5px}
 .river-bank h3{font-size:9px}
 }
+
+/* Otak Usil — tap-based original trick puzzles */
+.tricky-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;max-width:540px;margin:20px auto}
+.tricky-object{min-width:0;min-height:88px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;border:1px solid #e5e3f1;border-radius:14px;background:#fbfaff;color:var(--ink);padding:10px 5px}
+.tricky-object:hover{border-color:#b8b0ff;background:#f5f3ff}
+.tricky-symbol{font-size:27px;font-weight:900;line-height:1.1}
+.tricky-label{font-size:12px;font-weight:850;overflow-wrap:anywhere}
+
+/* Mesin Sinyal — original signal-routing puzzle */
+.signal-pair{display:grid;grid-template-columns:minmax(0,1fr) 26px minmax(0,1fr);gap:8px;align-items:center;margin:18px 0}
+.signal-card{min-width:0;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;border:1px solid #dfe9ec;background:#f8fdfd;border-radius:15px;padding:12px}
+.signal-label{grid-column:1/-1;font-size:9px;letter-spacing:1px;font-weight:900;color:#7b8b92}
+.signal-number{font-size:32px;line-height:1;color:#147e83}
+.signal-arrow{font-size:26px;text-align:center;color:#4d7e83}
+.signal-color{grid-column:1/-1;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;padding:5px 8px;font-size:10px;font-weight:850}
+.signal-day{background:#fff1c9;color:#896516}
+.signal-night{background:#272b4e;color:#fff}
+.signal-arrow-between{font-size:24px;color:#8b8ba0;text-align:center}
+.signal-section-title{font-size:13px;letter-spacing:-.2px;margin:22px 0 10px}
+.signal-selected{display:flex;flex-wrap:wrap;gap:7px;min-height:40px;align-items:center;padding:10px;border:1px dashed #d4d8e8;border-radius:12px;background:#fbfbff}
+.signal-chip{display:inline-flex;gap:9px;align-items:center;background:#eeecff;border:1px solid #d8d2ff;color:#5144c5;border-radius:10px;padding:9px 11px;font-size:11px;font-weight:850}
+.signal-chip b{font-size:16px}
+.signal-gates{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.signal-gate{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;border:1px solid #dfe8ea;border-radius:12px;background:#fbffff;padding:12px;color:var(--ink)}
+.signal-gate strong{font-size:12px;color:#147e83}
+.signal-gate span{font-size:10px;line-height:1.45;color:var(--muted)}
+.signal-gate:disabled{opacity:.5}
+@media(max-width:600px){
+ .tricky-grid{gap:7px}
+ .tricky-object{min-height:77px;border-radius:12px;padding:8px 4px}
+ .tricky-symbol{font-size:23px}
+ .tricky-label{font-size:11px}
+ .signal-pair{grid-template-columns:minmax(0,1fr) 16px minmax(0,1fr);gap:4px}
+ .signal-card{gap:5px;padding:8px 6px}
+ .signal-number{font-size:27px}
+ .signal-arrow{font-size:22px}
+ .signal-label{font-size:8px;letter-spacing:.5px}
+ .signal-gates{gap:7px}
+ .signal-gate{padding:10px 9px}
+ .signal-gate strong{font-size:11px}
+ .signal-gate span{font-size:9px}
+}
