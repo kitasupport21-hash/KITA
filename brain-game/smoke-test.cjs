@@ -86,7 +86,7 @@ for (let level = 1; level <= 400; level++) {
 // Simulate delegated button clicks so we test the new games' real completion flow.
 test.start('tricky', 1);
 let state = test.getGame();
-if (state.q.type !== 'tap' || state.q.target < 0) throw new Error('Otak Usil did not start a tap puzzle.');
+if (state.type !== 'tap' || state.q.target < 0) throw new Error('Otak Usil did not start a tap puzzle.');
 test.click({target: {closest: () => ({dataset: {action: 'tricky-pick', index: String(state.q.target)}})}});
 if (!test.getData().games.tricky.completed.includes(1) || test.getData().games.tricky.unlocked !== 2) {
   throw new Error('Otak Usil completion did not save progress or unlock level 2.');
