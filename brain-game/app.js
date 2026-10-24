@@ -1,16 +1,16 @@
 'use strict';
 (function () {
   const GAMES = [
-    {id:'sequence',title:'Urutan Angka',icon:'⌁',category:'Logika',color:'#eae7ff',ink:'#5c4bdb',desc:'Temukan aturan angka dan tentukan angka berikutnya.'},
-    {id:'memory',title:'Matriks Memori',icon:'▦',category:'Memori',color:'#dcf8ed',ink:'#168a65',desc:'Ingat kotak yang menyala lalu pilih kembali posisinya.'},
-    {id:'logic',title:'Ruang Deduksi',icon:'◈',category:'Penalaran',color:'#fff0d6',ink:'#a66a19',desc:'Gunakan petunjuk dan penalaran untuk menemukan jawaban.'},
-    {id:'math',title:'Tantangan Hitung',icon:'＋',category:'Angka',color:'#ffe6ef',ink:'#bd4671',desc:'Selesaikan soal hitung yang makin menantang.'},
-    {id:'pattern',title:'Pola Visual',icon:'▧',category:'Pola',color:'#e0f1ff',ink:'#2771ad',desc:'Perhatikan pola visual dan pilih bagian yang hilang.'},
-    {id:'word',title:'Acak Kata',icon:'Aa',category:'Bahasa',color:'#f2e4ff',ink:'#9252bf',desc:'Susun huruf acak menjadi kata bahasa Indonesia.'},
-    {id:'lights',title:'Matikan Lampu',icon:'✦',category:'Strategi',color:'#fff4d4',ink:'#9b741e',desc:'Matikan semua lampu dengan langkah yang terencana.'},
-    {id:'mastermind',title:'Tebak Kode',icon:'⌘',category:'Deduksi',color:'#e1e8ff',ink:'#4d5fb4',desc:'Temukan kode rahasia dengan petunjuk setiap tebakan.'},
-    {id:'sudoku',title:'Sudoku Mini',icon:'▦',category:'Angka',color:'#dcf7f7',ink:'#147e83',desc:'Isi kotak tanpa mengulang angka dalam baris, kolom, atau kotak.'},
-    {id:'river',title:'Menyeberangi Sungai',icon:'↔',category:'Strategi',color:'#e6f4e0',ink:'#4c7d3c',desc:'Bantu semua menyeberang tanpa meninggalkan pasangan berbahaya.'}
+    {id: 'sequence',title:'Urutan Angka',icon:'⌁',category:'Logika',color:'#eae7ff',ink:'#5c4bdb',desc:'Temukan aturan angka dan tentukan angka berikutnya.'},
+    {id: 'memory',title:'Matriks Memori',icon:'▦',category:'Memori',color:'#dcf8ed',ink:'#168a65',desc:'Ingat kotak yang menyala lalu pilih kembali posisinya.'},
+    {id: 'logic',title:'Ruang Deduksi',icon:'◈',category:'Penalaran',color:'#fff0d6',ink:'#a66a19',desc:'Gunakan petunjuk dan penalaran untuk menemukan jawaban.'},
+    {id: 'math',title:'Tantangan Hitung',icon:'＋',category:'Angka',color:'#ffe6ef',ink:'#bd4671',desc:'Selesaikan soal hitung yang makin menantang.'},
+    {id: 'pattern',title:'Pola Visual',icon:'▧',category:'Pola',color:'#e0f1ff',ink:'#2771ad',desc:'Perhatikan pola visual dan pilih bagian yang hilang.'},
+    {id: 'word',title:'Acak Kata',icon:'Aa',category:'Bahasa',color:'#f2e4ff',ink:'#9252bf',desc:'Susun huruf acak menjadi kata bahasa Indonesia.'},
+    {id: 'lights',title:'Matikan Lampu',icon:'✦',category:'Strategi',color:'#fff4d4',ink:'#9b741e',desc:'Matikan semua lampu dengan langkah yang terencana.'},
+    {id: 'mastermind',title:'Tebak Kode',icon:'⌘',category:'Deduksi',color:'#e1e8ff',ink:'#4d5fb4',desc:'Temukan kode rahasia dengan petunjuk setiap tebakan.'},
+    {id: 'sudoku',title:'Sudoku Mini',icon:'▦',category:'Angka',color:'#dcf7f7',ink:'#147e83',desc:'Isi kotak tanpa mengulang angka dalam baris, kolom, atau kotak.'},
+    {id: 'river',title:'Menyeberangi Sungai',icon:'↔',category:'Strategi',color:'#e6f4e0',ink:'#4c7d3c',desc:'Bantu semua menyeberang tanpa meninggalkan pasangan berbahaya.'}
   ];
   const $ = s => document.querySelector(s), home = $('#home-screen'), screen = $('#game-screen'), panel = $('#game-panel'), toast = $('#toast');
   const KEY = 'anibran-progress-v1';
