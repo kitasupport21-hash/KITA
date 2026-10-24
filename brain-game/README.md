@@ -1,8 +1,8 @@
-# BrainForge — Think Better
+# Ani Bran — Latih Otakmu
 
-BrainForge is a mobile-first, static brain-training web app with 10 playable mini-games. It is isolated in this brain-game directory; the existing KITA and BAZY project files are not changed by this app.
+Ani Bran adalah aplikasi web permainan otak yang mengutamakan ponsel dan berbahasa Indonesia. Tersedia 10 permainan dengan 400 level untuk setiap permainan. Tantangan meningkat berdasarkan level.
 
-## Games included
+## 10 permainan
 1. **Sequence Lab** — numerical sequences and rule discovery.
 2. **Memory Matrix** — memorise a grid, then reproduce the lit cells.
 3. **Deduction Room** — reasoning puzzles based on clues and careful logic.
@@ -14,15 +14,15 @@ BrainForge is a mobile-first, static brain-training web app with 10 playable min
 9. **Mini Sudoku** — 4×4 Sudoku with row, column and box rules.
 10. **River Crossing** — the farmer, wolf, goat and cabbage planning puzzle.
 
-## Run it
+## Menjalankan aplikasi
 Open index.html in a browser for basic play. For install prompts and full offline caching, serve the folder over HTTPS or localhost (service workers do not run reliably from a file URL).
 
-No build step, login, external library, account or network API is required. Game progress and best scores are stored locally in the browser on the current device; they do not sync across devices.
+No build step, login, external library, account or network API is required. Level aktif, keadaan permainan, dan skor disimpan secara lokal agar dapat dilanjutkan setelah aplikasi ditutup atau berpindah ke latar belakang. Progres tersimpan pada perangkat/peramban yang sama dan tidak disinkronkan antarperangkat.
 
-## Mobile installation
-Open the hosted app in Chrome on Android and choose **Install app** or **Add to Home screen**. The app shell and game assets are cached by the service worker after the first successful load.
+## Instalasi di ponsel
+Buka situs melalui HTTPS. Di Chrome Android, buka menu peramban lalu pilih **Instal aplikasi** atau **Tambahkan ke layar utama**. The app shell and game assets are cached by the service worker after the first successful load.
 
-## Project structure
+## Struktur proyek
 - index.html — app shell and accessible page structure
 - styles.css — responsive mobile-first UI
 - app.js — game rules, interactions and local score tracking
@@ -30,7 +30,7 @@ Open the hosted app in Chrome on Android and choose **Install app** or **Add to 
 - sw.js — offline asset cache
 - icon.svg — app icon
 
-## Testing checklist
+## Pemeriksaan dan pengujian
 - Open each card and verify restart / return-to-games controls.
 - Check each game’s win and loss flow.
 - Verify scores persist after refresh on the same browser.
