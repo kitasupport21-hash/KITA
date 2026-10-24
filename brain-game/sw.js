@@ -1,6 +1,6 @@
 'use strict';
-const CACHE_NAME = 'brainforge-static-v1';
-const ASSETS = ['./', './index.html', './styles.css', './app.js', './manifest.json', './icon.svg'];
+const CACHE_NAME = 'ani-bran-static-v2';
+const ASSETS = ['./', './index.html', './styles.css', './levels.css', './app.js', './manifest.json', './icon.svg'];
 self.addEventListener('install', function (event) {
   event.waitUntil(caches.open(CACHE_NAME).then(function (cache) { return cache.addAll(ASSETS); }).then(function () { return self.skipWaiting(); }));
 });
