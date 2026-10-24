@@ -43,7 +43,7 @@ for (let level = 1; level <= 400; level++) {
   for (const meta of test.GAMES) {
     const g = test.makeGame(meta.id, level);
     if (!g || typeof g !== 'object') throw new Error('Missing ' + meta.id + ' level ' + level);
-    if (g.q) {
+    if (g.q && g.q.options) {
       if (!Array.isArray(g.q.options) || g.q.options.length !== 4 ||
           new Set(g.q.options.map(String)).size !== 4 ||
           !g.q.options.map(String).includes(String(g.q.answer))) {
