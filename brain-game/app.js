@@ -251,6 +251,7 @@
     if(a==='sudoku-reset'){start(active,level);return;}
     if(a==='river-passenger'){game.passenger=b.dataset.value;draw();return;}
     if(a==='tricky-pick'){const ok=Number(b.dataset.index)===game.q.target;finish(ok,ok?game.q.explain:'Pilihan itu belum tepat. Baca instruksi kecilnya dengan cermat, lalu coba lagi.',ok?120+Math.min(level,400):0);return;}
+    if(a.startsWith('misi-')){window.AniMisiNalar.handle(a,b,game,finish,draw,say);return;}
     if(a==='synapse-add'){if(game.selected.length>=game.steps){say('Rangkaian sudah penuh. Hapus satu gerbang untuk mengubahnya.');return;}game.selected.push(b.dataset.op);draw();return;}
     if(a==='synapse-remove'){game.selected.splice(Number(b.dataset.index),1);draw();return;}
     if(a==='synapse-clear'){game.selected=[];draw();return;}
