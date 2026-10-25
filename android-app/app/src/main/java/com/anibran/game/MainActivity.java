@@ -50,10 +50,10 @@ public final class MainActivity extends Activity {
                         host.equalsIgnoreCase("www.instagram.com"))) {
                     try {
                         startActivity(new Intent(Intent.ACTION_VIEW, uri));
+                        return true;
                     } catch (ActivityNotFoundException exception) {
-                        view.loadUrl(uri.toString());
+                        return false;
                     }
-                    return true;
                 }
                 return false;
             }
