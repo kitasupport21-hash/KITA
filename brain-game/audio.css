@@ -3,3 +3,27 @@
 .sound-control.sound-active:after{opacity:.55;transform:scale(1)}
 .sound-panel[hidden]{display:none!important}.sound-panel{z-index:100;max-height:calc(100vh - 220px);overflow:auto}
 .sound-status{line-height:1.55}.sound-switch input,.volume-slider{cursor:pointer}
+
+/* Shared music controls: also visible on the main game page. */
+.room-floats{position:fixed;z-index:30;right:max(15px,calc((100vw - 1050px)/2));bottom:max(18px,env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:10px}
+.float-control{width:52px;height:52px;display:grid;place-items:center;border-radius:18px;border:1px solid #ffffff8a;color:#fff;box-shadow:0 8px 24px #20204230;transition:transform .15s ease}
+.float-control:active{transform:scale(.95)}
+.sound-control{background:#222341;color:#e6e1ff;border-color:#ffffff30;font-size:25px}
+.sound-control.sound-active{box-shadow:0 0 0 3px #54dfb044,0 8px 24px #20204230}
+.sound-panel[hidden]{display:none!important}
+.sound-panel{position:fixed;z-index:31;right:max(15px,calc((100vw - 1050px)/2));width:min(320px,calc(100vw - 30px));padding:17px;border:1px solid #e4e2fa;border-radius:17px;background:#fff;box-shadow:0 18px 60px #19192d30;max-height:calc(100vh - 100px);overflow:auto}
+body:not(.room-body) .sound-panel{bottom:max(82px,calc(env(safe-area-inset-bottom) + 76px))}
+body.room-body .sound-panel{bottom:max(190px,calc(env(safe-area-inset-bottom) + 180px))}
+.sound-panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:15px}
+.sound-panel-head h2{margin:4px 0 0;font-size:17px}
+.sound-small{font-size:8px;color:#8175cf;font-weight:950;letter-spacing:1.2px}
+.sound-close{width:30px;height:30px;border:1px solid #e5e5f0;border-radius:9px;background:#fafaff;color:#686982;font-size:20px}
+.sound-switch{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:11px 0;border-top:1px solid #f0f0f6;border-bottom:1px solid #f0f0f6}
+.sound-switch strong,.sound-switch small{display:block}
+.sound-switch strong{font-size:11px}
+.sound-switch small{font-size:9px;color:#85869a;margin-top:4px}
+.sound-switch input{width:20px;height:20px;accent-color:#6555db}
+.volume-label{display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:10px;font-weight:850;margin-top:15px}
+.volume-label strong{color:#5d50cd}
+.volume-slider{width:100%;accent-color:#6757e8;margin:12px 0 0}
+.sound-status{margin:11px 0 0;font-size:9px;color:#85869a;line-height:1.5}
