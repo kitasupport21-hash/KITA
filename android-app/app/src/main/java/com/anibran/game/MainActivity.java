@@ -70,6 +70,30 @@ public final class MainActivity extends Activity {
     }
 
     @Override
+    protected void onPause() {
+        if (webView != null) {
+            webView.evaluateJavascript(
+                "(function(){if(window.__aniBranPauseMusic){window.__aniBranPauseMusic();}})()",
+                null
+            );
+            webView.onPause();
+        }
+        super.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (webView != null) {
+            webView.onResume();
+            webView.evaluateJavascript(
+                "(function(){if(window.__aniBranResumeMusic){window.__aniBranResumeMusic();}})()",
+                null
+            );
+        }
+    }
+
+    @Override
     protected void onSaveInstanceState(Bundle outState) {
         if (webView != null) {
             webView.saveState(outState);
