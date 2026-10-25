@@ -39,3 +39,7 @@ Buka situs melalui HTTPS. Di Chrome Android, buka menu peramban lalu pilih **Ins
 11. **Otak Usil** — teka-teki trik orisinal dengan pilihan visual dan pertanyaan logika.
 12. **Mesin Sinyal** — rangkai gerbang operasi untuk mengubah sinyal awal menjadi sinyal sasaran.
 13. **Misi Nalar** — 400 misi cerita bahasa Indonesia dengan puzzle detektif, rute, urutan, sandi, timbangan, waktu, pola, logika saksi, inventaris, dan gerbang sinyal.
+
+
+## Ruang Ani Bran
+The separate `ruang.html` page contains locally saved game ratings and feedback, WhatsApp/Instagram shortcuts configured in `ruang.js`, and original generated ambient music with sound controls. Add the owner's WhatsApp number (international digits only) and Instagram username to `ruang.js` to activate those links; contact details are not displayed as page text.

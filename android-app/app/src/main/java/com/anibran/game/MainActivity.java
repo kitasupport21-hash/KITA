@@ -1,12 +1,16 @@
 package com.anibran.game;
 
 import android.app.Activity;
+import android.content.ActivityNotFoundException;
+import android.content.Intent;
+import android.net.Uri;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.webkit.WebResourceRequest;
 
 public final class MainActivity extends Activity {
     private WebView webView;
@@ -32,7 +36,28 @@ public final class MainActivity extends Activity {
         settings.setJavaScriptCanOpenWindowsAutomatically(false);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
 
-        webView.setWebViewClient(new WebViewClient());
+        webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                Uri uri = request.getUrl();
+                String host = uri.getHost();
+                if (host != null && (
+                        host.equalsIgnoreCase("wa.me") ||
+                        host.equalsIgnoreCase("api.whatsapp.com") ||
+                        host.equalsIgnoreCase("whatsapp.com") ||
+                        host.equalsIgnoreCase("www.whatsapp.com") ||
+                        host.equalsIgnoreCase("instagram.com") ||
+                        host.equalsIgnoreCase("www.instagram.com"))) {
+                    try {
+                        startActivity(new Intent(Intent.ACTION_VIEW, uri));
+                    } catch (ActivityNotFoundException exception) {
+                        view.loadUrl(uri.toString());
+                    }
+                    return true;
+                }
+                return false;
+            }
+        });
         webView.setWebChromeClient(new WebChromeClient());
         setContentView(webView);
 
@@ -55,6 +80,10 @@ public final class MainActivity extends Activity {
     public void onBackPressed() {
         if (webView == null) {
             super.onBackPressed();
+            return;
+        }
+        if (webView.canGoBack()) {
+            webView.goBack();
             return;
         }
         webView.evaluateJavascript(
