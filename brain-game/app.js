@@ -12,7 +12,8 @@
     {id: 'sudoku',title:'Sudoku Mini',icon:'▦',category:'Angka',color:'#dcf7f7',ink:'#147e83',desc:'Isi kotak tanpa mengulang angka dalam baris, kolom, atau kotak.'},
     {id: 'river',title:'Menyeberangi Sungai',icon:'↔',category:'Strategi',color:'#e6f4e0',ink:'#4c7d3c',desc:'Bantu semua menyeberang tanpa meninggalkan pasangan berbahaya.'},
     {id: 'tricky',title:'Otak Usil',icon:'🧠',category:'Teka-teki',color:'#ffe6ef',ink:'#bd4671',desc:'Teka-teki jebakan kreatif yang menguji cara berpikirmu. 400 level.'},
-    {id: 'synapse',title:'Mesin Sinyal',icon:'⟲',category:'Logika Baru',color:'#dcf7f7',ink:'#147e83',desc:'Rangkai gerbang logika untuk mengubah sinyal awal menjadi sinyal sasaran.'}
+    {id: 'synapse',title:'Mesin Sinyal',icon:'⟲',category:'Logika Baru',color:'#dcf7f7',ink:'#147e83',desc:'Rangkai gerbang logika untuk mengubah sinyal awal menjadi sinyal sasaran.'},
+    {id: 'misi-nalar',title:'Misi Nalar',icon:'🧩',category:'Misi Detektif',color:'#e9e6ff',ink:'#5245c8',desc:'400 cerita dan puzzle nalar berbahasa Indonesia; tiap misi memiliki tantangan berbeda.'}
   ];
   const $ = s => document.querySelector(s), home = $('#home-screen'), screen = $('#game-screen'), panel = $('#game-panel'), toast = $('#toast');
   const KEY = 'anibran-progress-v1';
@@ -188,6 +189,7 @@
     if(id==='math')return{q:makeMath(n),result:null};
     if(id==='tricky')return makeTricky(n);
     if(id==='synapse')return makeSynapse(n);
+    if(id==='misi-nalar')return window.AniMisiNalar.make(n);
     if(id==='memory'){const count=Math.min(23,3+Math.floor((n-1)/18)),targets=[];while(targets.length<count){const i=Math.floor(Math.random()*25);if(!targets.includes(i))targets.push(i);}return{count,targets,selected:[],phase:'show',revealMs:Math.max(500,1800-(n-1)*3),result:null};}
     if(id==='lights'){const cells=Array(25).fill(false),moves=Math.min(22,2+Math.floor(n/18));for(let i=0;i<moves;i++)flip(cells,Math.floor(Math.random()*25));if(cells.every(v=>!v))flip(cells,12);return{cells,moves:0,maxMoves:moves+5,result:null};}
     if(id==='mastermind'){const len=Math.min(6,3+Math.floor((n-1)/100)),digits=shuffle(Array.from({length:len+2},(_,i)=>i+1));return{code:digits.slice(0,len),history:[],attempts:0,maxAttempts:Math.max(4,9-Math.floor((n-1)/60)),result:null};}
@@ -209,6 +211,7 @@
       sudoku:()=>'<div class="panel-top"><span class="micro-label">SUDOKU 4 × 4</span><span class="question-count">Angka 1–4</span></div><p class="question-help">Setiap baris, kolom, dan kotak 2×2 harus berisi angka 1, 2, 3, dan 4 satu kali. Pilih kotak kosong lalu pilih angka.</p><div class="sudoku-grid">'+game.board.map((v,i)=>'<button type="button" class="sudoku-cell '+(game.givens[i]?'given ':'')+(game.selected===i?'selected':'')+'" data-action="sudoku-cell" data-index="'+i+'">'+(v||'')+'</button>').join('')+'</div><div class="digit-pad">'+[1,2,3,4].map(v=>'<button type="button" class="digit-button" data-action="sudoku-value" data-value="'+v+'">'+v+'</button>').join('')+'<button type="button" class="digit-button erase" data-action="sudoku-value" data-value="0">Hapus</button></div><div class="action-row"><button type="button" class="primary-button" data-action="sudoku-check">Periksa jawaban ↗</button><button type="button" class="secondary-button" data-action="sudoku-reset">Ulangi teka-teki</button></div>',
       tricky:()=>renderTricky(),
       synapse:()=>renderSynapse(),
+      'misi-nalar':()=>window.AniMisiNalar.render(game,level),
       river:()=>{const names={farmer:'🧑‍🌾 Petani',wolf:'🐺 Serigala',goat:'🐐 Kambing',cabbage:'🥬 Kubis'},left=Object.keys(game.sides).filter(k=>game.sides[k]===0),right=Object.keys(game.sides).filter(k=>game.sides[k]===1);return'<div class="panel-top"><span class="micro-label">SEBERANGKAN DENGAN AMAN</span><span class="question-count">'+game.moves+' / '+game.maxCrossings+' perjalanan</span></div><p class="question-help">Petani hanya bisa membawa satu penumpang. Serigala tidak boleh ditinggal bersama kambing, dan kambing tidak boleh ditinggal bersama kubis.</p><div class="river-banks"><div class="river-bank"><h3>TEPI KIRI</h3><div class="river-people">'+left.map(k=>'<span class="river-person">'+names[k]+'</span>').join('')+'</div></div><div class="river-boat">⛵<small style="display:block;font-size:9px">SUNGAI</small></div><div class="river-bank"><h3>TEPI KANAN</h3><div class="river-people">'+right.map(k=>'<span class="river-person">'+names[k]+'</span>').join('')+'</div></div></div><p class="answer-note">Pilih yang dibawa petani:</p><div class="river-select">'+[{k:'alone',t:'Sendiri'},{k:'wolf',t:'Serigala'},{k:'goat',t:'Kambing'},{k:'cabbage',t:'Kubis'}].map(o=>'<button type="button" class="river-choice '+(game.passenger===o.k?'active':'')+'" data-action="river-passenger" data-value="'+o.k+'">'+o.t+'</button>').join('')+'</div><div class="action-row"><button type="button" class="primary-button" data-action="river-cross">Seberangkan ↗</button><button type="button" class="secondary-button" data-action="river-reset">Mulai ulang</button></div>';}
     };
     panel.innerHTML=bar+render[active]();saveActive();

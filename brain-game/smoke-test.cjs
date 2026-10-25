@@ -4,6 +4,8 @@ const path = require('node:path');
 
 const appPath = path.join(__dirname, 'app.js');
 let source = fs.readFileSync(appPath, 'utf8');
+const misiPath = path.join(__dirname, 'misi-nalar.js');
+source = fs.readFileSync(misiPath, 'utf8') + '\n' + source;
 const insertionPoint = '  const saved=data.active;';
 if (!source.includes(insertionPoint)) throw new Error('Cannot attach game smoke tests: app initialization marker missing.');
 source = source.replace(insertionPoint, '  window.__aniTest = { GAMES, makeGame, sudokuCount, applySynapse, start, click, getGame: () => game, getData: () => data };' + insertionPoint);
@@ -32,13 +34,14 @@ const sandbox = {
 
 vm.runInNewContext(source, sandbox, { timeout: 10000 });
 const test = window.__aniTest;
-if (!test || test.GAMES.length !== 12) throw new Error('App startup failed or not all 10 games registered.');
+if (!test || test.GAMES.length !== 13) throw new Error('App startup failed or not all 13 games registered.');
 const rendered = elements.get('#game-grid').innerHTML;
-if (!rendered || (rendered.match(/class="game-card"/g) || []).length !== 12) {
-  throw new Error('Homepage did not render all 12 game buttons.');
+if (!rendered || (rendered.match(/class="game-card"/g) || []).length !== 13) {
+  throw new Error('Homepage did not render all 13 game buttons.');
 }
 let instances = 0;
 let trickyLevels = 0, synapseLevels = 0;
+const misiPrompts = new Set(), misiPuzzles = new Set();
 for (let level = 1; level <= 400; level++) {
   for (const meta of test.GAMES) {
     const g = test.makeGame(meta.id, level);
@@ -52,6 +55,13 @@ for (let level = 1; level <= 400; level++) {
     }
     if (meta.id === 'word' && g.q.scramble === g.q.answer) {
       throw new Error('Word was not scrambled at level ' + level);
+    }
+    if (meta.id === 'misi-nalar') {
+      if (!g.q || !g.q.prompt || !g.q.story || !g.q.puzzleKey) throw new Error('Missing Misi Nalar question or puzzle at level ' + level);
+      misiPrompts.add(g.q.prompt); misiPuzzles.add(g.q.puzzleKey);
+      if (g.q.mode === 2 && (!Array.isArray(g.q.cards) || g.q.cards.length !== 4 || g.q.order.length !== 4)) throw new Error('Invalid order puzzle at Misi Nalar level ' + level);
+      if ([0,7].includes(g.q.mode) && (!Array.isArray(g.q.objects) || g.q.target < 0 || g.q.target >= g.q.objects.length)) throw new Error('Invalid tap puzzle at Misi Nalar level ' + level);
+      if (g.q.mode !== 2 && g.q.mode !== 0 && g.q.mode !== 7 && (!Array.isArray(g.q.options) || g.q.options.length !== 4 || !g.q.options.includes(String(g.q.answer)))) throw new Error('Invalid choices at Misi Nalar level ' + level);
     }
     if (meta.id === 'tricky') {
       if (g.q.type === 'tap' && (!Array.isArray(g.q.objects) || g.q.target < 0 || g.q.target >= g.q.objects.length)) {
@@ -83,6 +93,7 @@ for (let level = 1; level <= 400; level++) {
     instances++;
   }
 }
+if(misiPrompts.size!==400||misiPuzzles.size!==400)throw new Error('Misi Nalar must have 400 unique questions and 400 unique puzzles.');
 // Simulate delegated button clicks so we test the new games' real completion flow.
 test.start('tricky', 1);
 let state = test.getGame();
@@ -104,6 +115,23 @@ if (!saved.games.tricky.completed.includes(1) || !saved.games.synapse.completed.
 }
 console.log('PASS: Otak Usil and Mesin Sinyal button interactions complete levels and persist progress.');
 
-console.log('PASS: app started and rendered 12 game buttons.');
+test.start('misi-nalar',1);
+state=test.getGame();
+if(state.q.mode!==0)throw new Error('Misi Nalar did not start with its first detective puzzle.');
+test.click({target:{closest:()=>({dataset:{action:'misi-pick',index:String(state.q.target)}})}});
+if(!test.getData().games['misi-nalar'].completed.includes(1)||test.getData().games['misi-nalar'].unlocked!==2)throw new Error('Misi Nalar detective puzzle did not unlock level 2.');
+test.start('misi-nalar',2);
+state=test.getGame();
+test.click({target:{closest:()=>({dataset:{action:'misi-answer',index:String(state.q.options.indexOf(state.q.answer))}})}});
+if(!test.getData().games['misi-nalar'].completed.includes(2)||test.getData().games['misi-nalar'].unlocked!==3)throw new Error('Misi Nalar route puzzle did not unlock level 3.');
+test.start('misi-nalar',3);
+state=test.getGame();
+for(let nextId=0;nextId<state.q.order.length;nextId++){const cardIndex=state.q.cards.findIndex(c=>c.id===nextId);test.click({target:{closest:()=>({dataset:{action:'misi-order-pick',index:String(cardIndex)}})}});}
+if(!test.getData().games['misi-nalar'].completed.includes(3)||test.getData().games['misi-nalar'].unlocked!==4)throw new Error('Misi Nalar ordered puzzle did not unlock level 4.');
+const savedMisi=JSON.parse(store.get('anibran-progress-v1'));
+if(!savedMisi.games['misi-nalar'].completed.includes(1)||!savedMisi.games['misi-nalar'].completed.includes(2)||!savedMisi.games['misi-nalar'].completed.includes(3))throw new Error('Misi Nalar progress was not persisted.');
+console.log('PASS: Misi Nalar detective, route and sequence interactions unlock levels and persist progress.');
+console.log('PASS: all 400 Misi Nalar questions and puzzle signatures are unique.');
+console.log('PASS: app started and rendered 13 game buttons.');
 console.log('PASS: generated ' + instances + ' game-level instances; answer choices, word scrambling, memory targets, code digits, Sudoku uniqueness, trick puzzles and signal solutions checked.');
 console.log('PASS: ' + trickyLevels + ' Otak Usil puzzles and ' + synapseLevels + ' Mesin Sinyal puzzles validated.');
