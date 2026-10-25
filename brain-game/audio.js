@@ -2,6 +2,7 @@
 (function () {
   const MUSIC_URL = 'https://gen.daydream.live/v1/songs/sng_t28XEfrsNfG4i2bJ7DTs1Q/2.mp3';
   const PREF_KEY = 'ani-bran-audio-v5';
+  const POSITION_KEY = 'ani-bran-song-position-v1';
   const $ = id => document.getElementById(id);
   let prefs = readPrefs(PREF_KEY);
   if (!prefs) {
@@ -10,7 +11,7 @@
   }
   let musicOn = prefs.on !== false;
   let volume = clamp(prefs.volume, 0, 100, 92);
-  let player = null, ctx = null, fxBus = null;
+  let player = null, lastPositionSave = 0, resumePosition = readPosition(), resumeApplied = false;
 
   function readPrefs(key) {
     try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (_) { return null; }
@@ -18,6 +19,26 @@
   function clamp(value, min, max, fallback) {
     value = Number(value);
     return Number.isFinite(value) ? Math.max(min, Math.min(max, value)) : fallback;
+  }
+  function readPosition() {
+    try {
+      const value = Number(sessionStorage.getItem(POSITION_KEY) || 0);
+      return Number.isFinite(value) && value > 0 ? value : 0;
+    } catch (_) { return 0; }
+  }
+  function savePosition() {
+    if (!player || !Number.isFinite(player.currentTime) || player.currentTime <= 0) return;
+    const now = Date.now();
+    if (now - lastPositionSave < 1800 && !document.hidden) return;
+    lastPositionSave = now;
+    try { sessionStorage.setItem(POSITION_KEY, String(player.currentTime)); } catch (_) {}
+  }
+  function applyResumePosition() {
+    if (!player || resumeApplied || !Number.isFinite(player.duration) || player.duration <= 0) return;
+    resumeApplied = true;
+    if (resumePosition > 0) {
+      try { player.currentTime = resumePosition % player.duration; } catch (_) {}
+    }
   }
   function save() {
     try { localStorage.setItem(PREF_KEY, JSON.stringify({ on: musicOn, volume: volume })); } catch (_) {}
@@ -28,12 +49,16 @@
   }
   function ensurePlayer() {
     if (player) return player;
-    player = new Audio(MUSIC_URL);
+    player = new Audio();
     player.id = 'ani-bran-background-audio';
     player.preload = 'auto';
     player.loop = true;
     player.volume = volume / 100;
     player.setAttribute('aria-hidden', 'true');
+    player.addEventListener('loadedmetadata', applyResumePosition);
+    player.addEventListener('durationchange', applyResumePosition);
+    player.addEventListener('timeupdate', savePosition);
+    player.addEventListener('pause', savePosition);
     player.addEventListener('playing', function () {
       setStatus('Musik sedang diputar dan akan berulang otomatis.');
       if ($('sound-float')) $('sound-float').classList.toggle('sound-active', musicOn);
@@ -41,6 +66,7 @@
     player.addEventListener('error', function () {
       setStatus('Musik tidak dapat dimuat. Periksa koneksi internet lalu coba lagi.');
     });
+    player.src = MUSIC_URL;
     return player;
   }
   function startMusic() {
@@ -48,17 +74,19 @@
     const audio = ensurePlayer();
     audio.loop = true;
     audio.volume = volume / 100;
+    if (audio.readyState >= 1) applyResumePosition();
     if (!audio.paused) return;
     try {
       const result = audio.play();
       if (result && result.catch) result.catch(function () {
-        setStatus('Ketuk layar sekali lagi agar musik mulai diputar.');
+        setStatus('Jika pemutaran otomatis diblokir browser, ketuk layar sekali untuk mengizinkannya.');
       });
     } catch (_) {
-      setStatus('Ketuk layar sekali lagi agar musik mulai diputar.');
+      setStatus('Jika pemutaran otomatis diblokir browser, ketuk layar sekali untuk mengizinkannya.');
     }
   }
   function stopMusic() {
+    savePosition();
     if (player) player.pause();
   }
   function syncUI() {
@@ -73,33 +101,9 @@
     }
     if ($('volume-value')) $('volume-value').textContent = volume + '%';
     if ($('sound-float')) $('sound-float').classList.toggle('sound-active', musicOn);
-    if (!musicOn) setStatus('Musik dimatikan. Suara tombol tetap aktif.');
+    if (!musicOn) setStatus('Musik dimatikan.');
     else if (player && !player.paused) setStatus('Musik sedang diputar dan akan berulang otomatis.');
-    else setStatus('Musik siap. Ketuk layar sekali untuk mulai; lagu yang sama akan berulang.');
-  }
-  function chime() {
-    const AC = window.AudioContext || window.webkitAudioContext;
-    if (!AC) return;
-    try {
-      if (!ctx) {
-        ctx = new AC();
-        fxBus = ctx.createGain();
-        fxBus.gain.value = 0.85;
-        fxBus.connect(ctx.destination);
-      }
-      if (ctx.state === 'suspended') ctx.resume().catch(function () {});
-      [76, 81, 84].forEach(function (midi, i) {
-        const now = ctx.currentTime + i * 0.055;
-        const osc = ctx.createOscillator(), gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.value = 440 * Math.pow(2, (midi - 69) / 12);
-        gain.gain.setValueAtTime(0.0001, now);
-        gain.gain.exponentialRampToValueAtTime(0.07, now + 0.018);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.62);
-        osc.connect(gain); gain.connect(fxBus);
-        osc.start(now); osc.stop(now + 0.7);
-      });
-    } catch (_) {}
+    else setStatus('Musik akan dilanjutkan otomatis saat halaman dibuka.');
   }
   function setup() {
     const button = $('sound-float'), panel = $('sound-panel');
@@ -135,10 +139,16 @@
       }
     }, true);
     document.addEventListener('visibilitychange', function () {
-      if (document.hidden) stopMusic();
+      if (document.hidden) savePosition();
       else if (musicOn) startMusic();
     });
+    window.addEventListener('pagehide', savePosition);
+    window.addEventListener('pageshow', function () {
+      if (musicOn) startMusic();
+    });
+    window.addEventListener('beforeunload', savePosition);
     syncUI();
+    if (musicOn) startMusic();
   }
   setup();
 })();
