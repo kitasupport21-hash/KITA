@@ -41,6 +41,7 @@ jobs:
         run: |
           node --check brain-game/app.js
           node --check brain-game/ruang.js
+          node --check brain-game/audio.js
           node brain-game/smoke-test.cjs
 
       - name: Bundle the original game files without UI edits

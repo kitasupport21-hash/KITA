@@ -3,7 +3,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#15162b"><meta name="description" content="Ruang Ani Bran: beri rating dan saran untuk permainan otak.">
 <title>Ruang Ani Bran — Rating & Kontak</title>
-<link rel="stylesheet" href="./styles.css"><link rel="stylesheet" href="./ruang.css">
+<link rel="stylesheet" href="./styles.css"><link rel="stylesheet" href="./ruang.css"><link rel="stylesheet" href="./audio.css?v=1">
 </head><body class="room-body">
 <div class="room-shell">
 <header class="room-topbar"><a class="room-back" href="./index.html"><span>←</span> Ani Bran</a><span class="room-page-mark">RUANG 02</span></header>
@@ -16,9 +16,9 @@
 <p class="rating-question">Seberapa seru permainan ini?</p><div id="rating-stars" class="rating-stars" role="group" aria-label="Pilih rating bintang"></div><p id="rating-label" class="rating-label">Pilih 1 sampai 5 bintang</p>
 <label class="feedback-label" for="rating-feedback">Saran atau komentar (opsional)</label><textarea id="rating-feedback" rows="4" maxlength="800" placeholder="Contoh: level berikutnya bisa lebih menantang..."></textarea>
 <div class="rating-actions"><button id="save-rating" class="room-primary-button" type="button">Simpan rating</button><button id="send-review" class="room-secondary-button" type="button">Kirim melalui WhatsApp ↗</button></div>
-<p id="rating-status" class="room-status" role="status" aria-live="polite">Rating disimpan di perangkat ini. WhatsApp akan dihubungkan setelah nomor diberikan.</p>
+<p id="rating-status" class="room-status" role="status" aria-live="polite">Rating disimpan di perangkat ini. WhatsApp akan membuka chat berisi pesan awal; tekan Send untuk mengirimnya.</p>
 </section>
-<section class="privacy-note"><span>🔒</span><p><strong>Privasi kontak</strong><br>Ikon WhatsApp dan Instagram tidak menampilkan nomor telepon atau ID di halaman ini. Tautan akan diaktifkan setelah pemilik menghubungkan akun yang benar.</p></section>
+<section class="privacy-note"><span>🔒</span><p><strong>Privasi kontak</strong><br>Nomor WhatsApp dan ID Instagram tidak ditampilkan sebagai teks. Tombol WhatsApp membuka chat berisi pesan awal; tombol Instagram membuka profil.</p></section>
 </main><footer class="room-footer">RUANG ANI BRAN · CERITAKAN PENGALAMANMU</footer></div>
 <div class="room-floats" aria-label="Kontak dan suara">
 <button id="sound-float" class="float-control sound-control" type="button" aria-label="Pengaturan suara" aria-expanded="false" title="Pengaturan suara">♫</button>
@@ -27,6 +27,6 @@
 </div>
 <section id="sound-panel" class="sound-panel" hidden aria-label="Pengaturan suara"><div class="sound-panel-head"><div><span class="sound-small">SUASANA RUANG</span><h2>Pengaturan suara</h2></div><button id="close-sound" class="sound-close" type="button" aria-label="Tutup pengaturan suara">×</button></div>
 <label class="sound-switch"><span><strong>Musik latar</strong><small>Melodi instrumental berganti otomatis</small></span><input id="music-toggle" type="checkbox" checked></label>
-<label class="volume-label" for="music-volume"><span>Volume musik</span><strong id="volume-value">24%</strong></label><input id="music-volume" class="volume-slider" type="range" min="0" max="70" value="24"><p id="sound-status" class="sound-status">Musik mulai setelah sentuhan pertama.</p></section>
-<div id="room-toast" class="room-toast" role="status" aria-live="polite"></div><script src="./ruang.js" defer></script>
+<label class="volume-label" for="music-volume"><span>Volume musik</span><strong id="volume-value">24%</strong></label><input id="music-volume" class="volume-slider" type="range" min="0" max="100" value="68"><p id="sound-status" class="sound-status">Musik mulai setelah sentuhan pertama.</p></section>
+<div id="room-toast" class="room-toast" role="status" aria-live="polite"></div><script src="./ruang.js?v=2" defer></script><script src="./audio.js?v=1" defer></script>
 </body></html>
