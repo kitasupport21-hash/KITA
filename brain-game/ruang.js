@@ -30,6 +30,21 @@
   function whatsapp(message){const phone=String(CONTACT_PHONE||'').replace(/\D/g,'');if(!phone){toast('WhatsApp belum dihubungkan. Kirim nomor dengan kode negara kepada pembuat aplikasi.');return;}window.location.href='https://wa.me/'+phone+'?text='+encodeURIComponent(message);}
   function instagram(){const username=String(INSTAGRAM_USERNAME||'').trim().replace(/^@/,'');if(!username){toast('Instagram belum dihubungkan. Kirim username Instagram kepada pembuat aplikasi.');return;}window.location.href='https://www.instagram.com/'+encodeURIComponent(username)+'/';}
 
+  document.addEventListener('click',function(e){
+    const b=e.target.closest('button[data-action]');if(!b)return;
+    if(b.dataset.action==='select-game')selectGame(b.dataset.id);
+    if(b.dataset.action==='set-stars'){selectedStars=Number(b.dataset.stars)||0;renderStars();}
+  });
+  $('save-rating').addEventListener('click',saveRating);
+  $('send-review').addEventListener('click',function(){
+    if(!selectedStars){toast('Pilih rating bintang terlebih dahulu.');return;}
+    saveRating();
+    const g=selectedGame();
+    whatsapp('Halo, saya ingin memberi ulasan Ani Bran.\nPermainan: '+g.name+'\nRating: '+selectedStars+'/5\nKomentar: '+($('rating-feedback').value.trim()||'(Tidak ada komentar tambahan)'));
+  });
+  $('whatsapp-float').addEventListener('click',function(){whatsapp('Halo! Saya ingin bertanya tentang permainan Ani Bran.');});
+  $('instagram-float').addEventListener('click',instagram);
+
   selectGame(selectedId);
 
 })();
