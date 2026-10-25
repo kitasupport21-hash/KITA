@@ -1,9 +1,13 @@
 'use strict';
 (function () {
   const MUSIC_URL = 'https://gen.daydream.live/v1/songs/sng_t28XEfrsNfG4i2bJ7DTs1Q/2.mp3';
-  const PREF_KEY = 'ani-bran-audio-v4';
+  const PREF_KEY = 'ani-bran-audio-v5';
   const $ = id => document.getElementById(id);
-  let prefs = readPrefs(PREF_KEY) || readPrefs('ani-bran-audio-v3') || {};
+  let prefs = readPrefs(PREF_KEY);
+  if (!prefs) {
+    const previous = readPrefs('ani-bran-audio-v4') || readPrefs('ani-bran-audio-v3') || {};
+    prefs = { volume: previous.volume };
+  }
   let musicOn = prefs.on !== false;
   let volume = clamp(prefs.volume, 0, 100, 92);
   let player = null, ctx = null, fxBus = null;
