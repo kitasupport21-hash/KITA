@@ -126,16 +126,12 @@
       save();
       syncUI();
     });
-    document.addEventListener('pointerdown', function (event) {
+    document.addEventListener('pointerdown', function () {
       if (musicOn) startMusic();
-      const target = event.target && event.target.closest ? event.target.closest('button, a, [role="button"]') : null;
-      if (target && !target.disabled) chime();
     }, true);
     document.addEventListener('keydown', function (event) {
       if (event.key === 'Enter' || event.key === ' ') {
         if (musicOn) startMusic();
-        const target = event.target && event.target.closest ? event.target.closest('button, a, [role="button"]') : null;
-        if (target && !target.disabled) chime();
       }
     }, true);
     document.addEventListener('visibilitychange', function () {
