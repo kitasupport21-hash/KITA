@@ -70,7 +70,7 @@
     return player;
   }
   function startMusic() {
-    if (!musicOn) return;
+    if (!musicOn || document.hidden) return;
     const audio = ensurePlayer();
     audio.loop = true;
     audio.volume = volume / 100;
@@ -139,16 +139,20 @@
       }
     }, true);
     document.addEventListener('visibilitychange', function () {
-      if (document.hidden) savePosition();
+      if (document.hidden) stopMusic();
       else if (musicOn) startMusic();
     });
-    window.addEventListener('pagehide', savePosition);
+    window.addEventListener('pagehide', stopMusic);
     window.addEventListener('pageshow', function () {
-      if (musicOn) startMusic();
+      if (!document.hidden && musicOn) startMusic();
     });
-    window.addEventListener('beforeunload', savePosition);
+    window.addEventListener('beforeunload', stopMusic);
+    window.__aniBranPauseMusic = stopMusic;
+    window.__aniBranResumeMusic = function () {
+      if (!document.hidden && musicOn) startMusic();
+    };
     syncUI();
-    if (musicOn) startMusic();
+    if (musicOn && !document.hidden) startMusic();
   }
   setup();
 })();
