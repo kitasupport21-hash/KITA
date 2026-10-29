@@ -42,7 +42,7 @@
  <div class="top-actions">
   <select class="country-select" id="countrySelect" aria-label="Country"><option value="IN">🇮🇳 India · INR</option><option value="ID">🇮🇩 Indonesia · IDR</option></select>
   <select class="lang-select" id="langSelect" aria-label="Language"><option value="en">EN</option><option value="hi">हिन्दी</option><option value="id">ID</option></select>
-  <div class="avatar">PB</div>
+  <div class="avatar" role="button" tabindex="0" title="Profile and settings" aria-label="Profile and settings">PB</div>
  </div>
 </header>
 <div class="content">
@@ -139,6 +139,8 @@ document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',(
 document.getElementById('adminNav').addEventListener('click',()=>{state.admin=!state.admin;state.view=state.admin?'admin':'profile';save();render();showToast(tr('adminOn'))});
 document.getElementById('countrySelect').addEventListener('change',e=>changeCountry(e.target.value));
 document.getElementById('langSelect').addEventListener('change',e=>changeLang(e.target.value));
+document.querySelector('.avatar').addEventListener('click',()=>goto('profile'));
+document.querySelector('.avatar').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' ')goto('profile')});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 window.goto=goto;window.openCard=openCard;window.closeModal=closeModal;window.placeOrder=placeOrder;window.requestRedeem=requestRedeem;window.claimTask=claimTask;window.setFilter=setFilter;window.setSearch=setSearch;window.changeCountry=changeCountry;window.changeLang=changeLang;window.copyReferral=copyReferral;window.resetDemo=resetDemo;window.doReset=doReset;window.toggleAdmin=toggleAdmin;window.exportDemo=exportDemo;
 render();
