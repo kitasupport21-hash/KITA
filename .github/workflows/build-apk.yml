@@ -35,6 +35,7 @@ jobs:
           cp -a "$SOURCE_DIR/." "$BUILD_DIR/"
           # Apply browser-rendered DOM capture, responsive assets and offline viewer fixes.
           python3 "$GITHUB_WORKSPACE/fixes/patch_source.py" "$BUILD_DIR"
+          python3 "$GITHUB_WORKSPACE/fixes/lint_patch.py" "$BUILD_DIR"
           # Remove the generated counter-app test, which imports the wrong root widget.
           rm -rf "$BUILD_DIR/test"
           if [ -f "$BUILD_DIR/android/app/build.gradle.kts" ]; then
