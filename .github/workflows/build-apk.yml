@@ -1,0 +1,93 @@
+name: OfflineVault Android APK
+
+on:
+  push:
+    branches:
+      - offlinevault
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-android:
+    name: Analyze and build release APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out OfflineVault branch
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter stable
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Create Flutter Android project and install source
+        shell: bash
+        run: |
+          set -euo pipefail
+          SOURCE_DIR="$RUNNER_TEMP/offlinevault_source"
+          BUILD_DIR="$RUNNER_TEMP/offlinevault_android"
+          mkdir -p "$SOURCE_DIR"
+          tar -xJf "$GITHUB_WORKSPACE/OfflineVault_Source.tar.xz" -C "$SOURCE_DIR"
+          flutter create --platforms=android --project-name offlinevault --org com.offlinevault.app "$BUILD_DIR"
+          cp -a "$SOURCE_DIR/." "$BUILD_DIR/"
+          if [ -f "$BUILD_DIR/android/app/build.gradle.kts" ]; then
+            sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 24/' "$BUILD_DIR/android/app/build.gradle.kts"
+          elif [ -f "$BUILD_DIR/android/app/build.gradle" ]; then
+            sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 24/' "$BUILD_DIR/android/app/build.gradle"
+          else
+            echo "App Gradle file was not generated." >&2
+            exit 1
+          fi
+          echo "$BUILD_DIR" > "$RUNNER_TEMP/offlinevault_build_dir.txt"
+
+      - name: Show toolchain versions
+        run: |
+          flutter --version
+          java -version
+
+      - name: Resolve Flutter dependencies
+        shell: bash
+        run: |
+          BUILD_DIR="$(cat "$RUNNER_TEMP/offlinevault_build_dir.txt")"
+          cd "$BUILD_DIR"
+          flutter pub get
+
+      - name: Run static analysis
+        shell: bash
+        run: |
+          BUILD_DIR="$(cat "$RUNNER_TEMP/offlinevault_build_dir.txt")"
+          cd "$BUILD_DIR"
+          flutter analyze --no-pub
+
+      - name: Build release APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          BUILD_DIR="$(cat "$RUNNER_TEMP/offlinevault_build_dir.txt")"
+          cd "$BUILD_DIR"
+          flutter build apk --release
+          mkdir -p "$GITHUB_WORKSPACE/artifacts"
+          cp build/app/outputs/flutter-apk/app-release.apk "$GITHUB_WORKSPACE/artifacts/OfflineVault-release.apk"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: OfflineVault-Android-APK
+          path: artifacts/OfflineVault-release.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish APK release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="offlinevault-build-${GITHUB_RUN_NUMBER}-${GITHUB_RUN_ATTEMPT}"
+          gh release create "$TAG" "$GITHUB_WORKSPACE/artifacts/OfflineVault-release.apk" \
+            --target "$GITHUB_SHA" \
+            --title "OfflineVault Android APK ${GITHUB_RUN_NUMBER}" \
+            --notes "Release APK built by GitHub Actions after dependency resolution, static analysis, and Android release compilation. Source branch: offlinevault."
